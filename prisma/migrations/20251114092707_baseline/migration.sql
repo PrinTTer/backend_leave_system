@@ -25,7 +25,7 @@ CREATE TABLE `fact_form` (
     `status` ENUM('draft', 'pending', 'approve', 'reject', 'cancel') NOT NULL,
     `approve_date` DATE NOT NULL,
     `note` VARCHAR(225) NULL,
-    `file_leave` INTEGER NOT NULL,
+    `file_leave` VARCHAR(45) NOT NULL,
     `update_at` TIMESTAMP(0) NOT NULL,
     `create_at` TIMESTAMP(0) NOT NULL,
 
@@ -38,7 +38,7 @@ CREATE TABLE `leave_approval_rule` (
     `leave_approval_rule_id` INTEGER NOT NULL,
     `leave_type_id` INTEGER NOT NULL,
     `leave_less_than` INTEGER NOT NULL,
-    `approval_level` VARCHAR(45) NOT NULL,
+    `approval_level` INTEGER NOT NULL,
 
     INDEX `fk_leave_approval_rule_leave_type1_idx`(`leave_type_id`),
     PRIMARY KEY (`leave_approval_rule_id`)
@@ -49,7 +49,8 @@ CREATE TABLE `leave_type` (
     `leave_type_id` INTEGER NOT NULL,
     `name` VARCHAR(100) NOT NULL,
     `gender` ENUM('male', 'femal', 'all') NOT NULL DEFAULT 'all',
-    `count_vacation` TINYINT NOT NULL,
+    `is_count_vacation` TINYINT NOT NULL,
+    `service_year` INTEGER NOT NULL,
     `number_approver` INTEGER NOT NULL,
     `category` ENUM('general', 'vacation') NOT NULL,
     `update_at` TIMESTAMP(0) NOT NULL,
@@ -82,6 +83,32 @@ CREATE TABLE `vacation_rule` (
     PRIMARY KEY (`vacation_rule_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `approval` (
+    `user_id` INTEGER NOT NULL,
+    `aprover_id` INTEGER NOT NULL,
+    `fact_form_id` VARCHAR(45) NOT NULL,
+    `status` ENUM('approve', 'reject', 'pending') NOT NULL,
+
+    UNIQUE INDEX `user_id_UNIQUE`(`user_id`),
+    UNIQUE INDEX `aprover_id_UNIQUE`(`aprover_id`),
+    UNIQUE INDEX `fact_form_fact_form_id_UNIQUE`(`fact_form_id`),
+    INDEX `fk_approval_fact_form1_idx`(`fact_form_id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `fact_leave_credit` (
+    `user_id` INTEGER NOT NULL,
+    `leave_type_id` INTEGER NOT NULL,
+    `annual_leave` FLOAT NOT NULL,
+    `used_leave` FLOAT NOT NULL,
+    `left_leave` FLOAT NOT NULL,
+
+    UNIQUE INDEX `user_id_UNIQUE`(`user_id`),
+    UNIQUE INDEX `leave_type_id_UNIQUE`(`leave_type_id`),
+    INDEX `fk_fact_leave_credit_leave_type1_idx`(`leave_type_id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `fact_form` ADD CONSTRAINT `fk_fact_form_leave_type` FOREIGN KEY (`leave_type_id`) REFERENCES `leave_type`(`leave_type_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
@@ -93,3 +120,9 @@ ALTER TABLE `leave_type_document` ADD CONSTRAINT `fk_leave_type_document_leave_t
 
 -- AddForeignKey
 ALTER TABLE `vacation_rule` ADD CONSTRAINT `fk_vacation_rule_leave_type1` FOREIGN KEY (`leave_type_id`) REFERENCES `leave_type`(`leave_type_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `approval` ADD CONSTRAINT `fk_approval_fact_form1` FOREIGN KEY (`fact_form_id`) REFERENCES `fact_form`(`fact_form_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `fact_leave_credit` ADD CONSTRAINT `fk_fact_leave_credit_leave_type1` FOREIGN KEY (`leave_type_id`) REFERENCES `leave_type`(`leave_type_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
