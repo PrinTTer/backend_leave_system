@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -9,19 +8,19 @@ datasource db {
 }
 
 model calendar {
-  calendar_id   Int                    @id
+  calendar_id   Int                    @id @default(autoincrement())
   calendar_type calendar_calendar_type
   title         String                 @db.VarChar(100)
   start_date    DateTime               @db.Date
   end_date      DateTime               @db.Date
   total_day     Int
   description   String?                @db.Text
-  update_at     DateTime               @db.Timestamp(0)
-  create_at     DateTime               @db.Timestamp(0)
+  update_at     DateTime               @db.Timestamp(0) @updatedAt
+  create_at     DateTime               @db.Timestamp(0) @default(now())
 }
 
 model fact_form {
-  fact_form_id  String           @id @db.VarChar(45)
+  fact_form_id  Int              @id @default(autoincrement())
   user_id       Int
   leave_type_id Int
   start_date    DateTime         @db.Date
@@ -32,16 +31,16 @@ model fact_form {
   approve_date  DateTime         @db.Date
   note          String?          @db.VarChar(225)
   file_leave    String           @db.VarChar(45)
-  update_at     DateTime         @db.Timestamp(0)
-  create_at     DateTime         @db.Timestamp(0)
-  approval      approval?
+  update_at     DateTime         @db.Timestamp(0) @updatedAt
+  create_at     DateTime         @db.Timestamp(0) @default(now())
+  approval      approval[]
   leave_type    leave_type       @relation(fields: [leave_type_id], references: [leave_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_fact_form_leave_type")
 
-  @@index([leave_type_id], map: "fk_fact_form_leave_type_idx")
+  @@index([leave_type_id], map: "fk_fact_form_leave_type1_idx")
 }
 
 model leave_approval_rule {
-  leave_approval_rule_id Int        @id
+  leave_approval_rule_id Int        @id @default(autoincrement())
   leave_type_id          Int
   leave_less_than        Int
   approval_level         Int
@@ -51,35 +50,36 @@ model leave_approval_rule {
 }
 
 model leave_type {
-  leave_type_id       Int                   @id
+  leave_type_id       Int                   @id @default(autoincrement())
   name                String                @db.VarChar(100)
   gender              leave_type_gender     @default(all)
-  is_count_vacation   Int                   @db.TinyInt
+  is_count_vacation   Boolean               @default(false)
   service_year        Int
   number_approver     Int
+  max_leave           Int
   category            leave_type_category
-  update_at           DateTime              @db.Timestamp(0)
-  create_at           DateTime              @db.Timestamp(0)
+  update_at           DateTime              @db.Timestamp(0) @updatedAt
+  create_at           DateTime              @db.Timestamp(0) @default(now())
   fact_form           fact_form[]
-  fact_leave_credit   fact_leave_credit?
+  fact_leave_credit   fact_leave_credit[]
   leave_approval_rule leave_approval_rule[]
   leave_type_document leave_type_document[]
   vacation_rule       vacation_rule[]
 }
 
 model leave_type_document {
-  leave_type_document_id Int                           @id
+  leave_type_document_id Int                           @id @default(autoincrement())
   leave_type_id          Int
   name                   String                        @db.VarChar(100)
   file_type              leave_type_document_file_type
-  is_required            Int                           @db.TinyInt
+  is_required            Boolean                       @default(false)
   leave_type             leave_type                    @relation(fields: [leave_type_id], references: [leave_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_leave_type_document_leave_type1")
 
   @@index([leave_type_id], map: "fk_leave_type_document_leave_type1_idx")
 }
 
 model vacation_rule {
-  vacation_rule_id Int        @id
+  vacation_rule_id Int        @id @default(autoincrement())
   leave_type_id    Int
   service_year     Int
   annual_leave     Int
@@ -92,7 +92,7 @@ model vacation_rule {
 model approval {
   user_id      Int             @unique(map: "user_id_UNIQUE")
   aprover_id   Int             @unique(map: "aprover_id_UNIQUE")
-  fact_form_id String          @unique(map: "fact_form_fact_form_id_UNIQUE") @db.VarChar(45)
+  fact_form_id Int
   status       approval_status
   fact_form    fact_form       @relation(fields: [fact_form_id], references: [fact_form_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_approval_fact_form1")
 
@@ -101,7 +101,7 @@ model approval {
 
 model fact_leave_credit {
   user_id       Int        @unique(map: "user_id_UNIQUE")
-  leave_type_id Int        @unique(map: "leave_type_id_UNIQUE")
+  leave_type_id Int
   annual_leave  Float      @db.Float
   used_leave    Float      @db.Float
   left_leave    Float      @db.Float

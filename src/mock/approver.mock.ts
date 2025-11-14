@@ -1,0 +1,50 @@
+export const ApproverMock = {
+  list: [
+    {
+      id: 1,
+      academicPosition: 'ผศ.',
+      fullname: 'วรัญญา อรรถเสนา',
+      position: 'หัวภาควิชาวิศวกรรมคอมพิวเตอร์',
+      department: 'ภาควิชาวิศวกรรมคอมพิวเตอร์',
+      approvalPosition: 'หัวภาควิชาวิศวกรรมคอมพิวเตอร์',
+      approvalOrder: '1',
+    },
+    {
+      id: 2,
+      adminPosition: 'อ.ร้อยโท',
+      fullname: 'อนุมัติ อิงคนินันท์',
+      position: 'รองหัวหน้าภาควิชาวิศวกรรมคอมพิวเตอร์',
+      department: 'ภาควิชาวิศวกรรมคอมพิวเตอร์',
+      approvalPosition: 'รักษาการแทนหัวภาควิชาวิศวกรรมคอมพิวเตอร์',
+      approvalOrder: '1',
+    },
+    {
+      id: 3,
+      adminPosition: 'รศ.',
+      fullname: 'สมชาย ดอนเจดีย์',
+      position: 'คณบดีคณะวิศวกรรมศาสตร์',
+      department: 'ภาควิชาวิศวกรรมชลประทาน',
+      approvalPosition: 'คณบดีคณะวิศวกรรมศาสตร์',
+      approvalOrder: '1,2,3,4',
+    },
+    {
+      id: 4,
+      adminPosition: '',
+      fullname: 'เพชรน้อย ยอดอยู่ดี',
+      position: 'หัวหน้าสำนักงานเลขานุการ',
+      department: 'สำนักงานเลขานุการ',
+      approvalPosition: 'รักษาการแทนคณบดีคณะวิศวกรรมศาสตร์',
+      approvalOrder: '1,2,3,4',
+    },
+  ],
+
+  detail: (id: number) => ({
+    id,
+    adminPosition: 'หัวหน้าฝ่าย',
+    fullname: `Approver ${id}`,
+    position: 'หัวหน้าฝ่าย',
+    department: 'ฝ่ายทั่วไป',
+    approvalPosition: `ผู้อนุมัติ ${id}`,
+    approvalOrder: id,
+  }),
+};
