@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model calendar {
+  calendar_id   Int                    @id
+  calendar_type calendar_calendar_type
+  title         String                 @db.VarChar(100)
+  start_date    DateTime               @db.Date
+  end_date      DateTime               @db.Date
+  total_day     Int
+  description   String?                @db.Text
+  update_at     DateTime               @db.Timestamp(0)
+  create_at     DateTime               @db.Timestamp(0)
+}
+
+model fact_form {
+  fact_form_id  String           @id @db.VarChar(45)
+  user_id       Int
+  leave_type_id Int
+  start_date    DateTime         @db.Date
+  end_date      DateTime         @db.Date
+  total_day     Float            @default(0) @db.Float
+  fiscal_year   Int
+  status        fact_form_status
+  approve_date  DateTime         @db.Date
+  note          String?          @db.VarChar(225)
+  file_leave    Int
+  update_at     DateTime         @db.Timestamp(0)
+  create_at     DateTime         @db.Timestamp(0)
+  leave_type    leave_type       @relation(fields: [leave_type_id], references: [leave_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_fact_form_leave_type")
+
+  @@index([leave_type_id], map: "fk_fact_form_leave_type_idx")
+}
+
+model leave_approval_rule {
+  leave_approval_rule_id Int        @id
+  leave_type_id          Int
+  leave_less_than        Int
+  approval_level         String     @db.VarChar(45)
+  leave_type             leave_type @relation(fields: [leave_type_id], references: [leave_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_leave_approval_rule_leave_type1")
+
+  @@index([leave_type_id], map: "fk_leave_approval_rule_leave_type1_idx")
+}
+
+model leave_type {
+  leave_type_id       Int                   @id
+  name                String                @db.VarChar(100)
+  gender              leave_type_gender     @default(all)
+  count_vacation      Int                   @db.TinyInt
+  number_approver     Int
+  category            leave_type_category
+  update_at           DateTime              @db.Timestamp(0)
+  create_at           DateTime              @db.Timestamp(0)
+  fact_form           fact_form[]
+  leave_approval_rule leave_approval_rule[]
+  leave_type_document leave_type_document[]
+  vacation_rule       vacation_rule[]
+}
+
+model leave_type_document {
+  leave_type_document_id Int                           @id
+  leave_type_id          Int
+  name                   String                        @db.VarChar(100)
+  file_type              leave_type_document_file_type
+  is_required            Int                           @db.TinyInt
+  leave_type             leave_type                    @relation(fields: [leave_type_id], references: [leave_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_leave_type_document_leave_type1")
+
+  @@index([leave_type_id], map: "fk_leave_type_document_leave_type1_idx")
+}
+
+model vacation_rule {
+  vacation_rule_id Int        @id
+  leave_type_id    Int
+  service_year     Int
+  annual_leave     Int
+  max_leave        Int
+  leave_type       leave_type @relation(fields: [leave_type_id], references: [leave_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vacation_rule_leave_type1")
+
+  @@index([leave_type_id], map: "fk_vacation_rule_leave_type1_idx")
+}
+
+enum calendar_calendar_type {
+  holiday
+  academic
+  fiscal
+}
+
+enum leave_type_gender {
+  male
+  femal
+  all
+}
+
+enum leave_type_document_file_type {
+  pdf
+  png
+  doc
+  jpg
+}
+
+enum leave_type_category {
+  general
+  vacation
+}
+
+enum fact_form_status {
+  draft
+  pending
+  approve
+  reject
+  cancel
+}
