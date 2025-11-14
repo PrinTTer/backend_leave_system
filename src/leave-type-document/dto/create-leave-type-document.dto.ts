@@ -6,6 +6,7 @@ import {
   IsBoolean,
   MaxLength,
   IsOptional,
+  Min,
 } from 'class-validator';
 
 export enum FileType {
@@ -18,6 +19,7 @@ export enum FileType {
 export class CreateLeaveTypeDocumentDto {
   @IsOptional()
   @IsInt()
+  @Min(1)
   leave_type_id: number;
 
   @IsNotEmpty()
