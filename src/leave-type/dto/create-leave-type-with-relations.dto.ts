@@ -10,17 +10,17 @@ export class CreateLeaveTypeWithRelationsDto extends CreateLeaveTypeDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateLeaveApprovalRuleDto)
-  leaveApprovalRules?: CreateLeaveApprovalRuleDto[];
+  leave_approval_rule?: CreateLeaveApprovalRuleDto[];
 
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateLeaveTypeDocumentDto)
-  leaveTypeDocuments?: CreateLeaveTypeDocumentDto[];
+  leave_type_document?: CreateLeaveTypeDocumentDto[];
 
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateVacationRuleDto)
-  vacationRules?: CreateVacationRuleDto[];
+  vacation_rule?: CreateVacationRuleDto[];
 }
