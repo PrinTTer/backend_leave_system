@@ -101,7 +101,7 @@ model approval {
 }
 
 model fact_leave_credit {
-  user_id       Int        @unique(map: "user_id_UNIQUE")
+  user_id       Int        
   leave_type_id Int
   annual_leave  Float      @db.Float
   used_leave    Float      @db.Float
@@ -109,6 +109,7 @@ model fact_leave_credit {
   leave_type    leave_type @relation(fields: [leave_type_id], references: [leave_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_fact_leave_credit_leave_type1")
 
   @@index([leave_type_id], map: "fk_fact_leave_credit_leave_type1_idx")
+  @@id([user_id, leave_type_id])
 }
 
 enum calendar_calendar_type {
@@ -119,7 +120,7 @@ enum calendar_calendar_type {
 
 enum leave_type_gender {
   male
-  femal
+  female
   all
 }
 
