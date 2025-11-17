@@ -15,6 +15,7 @@ model calendar {
   end_date      DateTime               @db.Date
   total_day     Int
   description   String?                @db.Text
+  is_holiday    Boolean?
   update_at     DateTime               @db.Timestamp(0) @updatedAt
   create_at     DateTime               @db.Timestamp(0) @default(now())
 }

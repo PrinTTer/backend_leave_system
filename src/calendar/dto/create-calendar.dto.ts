@@ -1,10 +1,9 @@
-// src/calendar/dto/create-calendar.dto.ts
-import { IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export enum CalendarTypeEnum {
-  holiday = 'holiday',
-  academic = 'academic',
-  fiscal = 'fiscal',
+  HOLIDAY = 'holiday',
+  ACADEMIC = 'academic',
+  FISCAL = 'fiscal',
 }
 
 export class CreateCalendarDto {
@@ -15,6 +14,10 @@ export class CreateCalendarDto {
   @IsNotEmpty()
   title: string;
 
+  @IsOptional()
+  @IsString()
+  description?: string;
+
   @IsDateString()
   startDate: string;
 
@@ -22,6 +25,6 @@ export class CreateCalendarDto {
   endDate: string;
 
   @IsOptional()
-  @IsString()
-  description?: string;
+  @IsBoolean()
+  isHoliday?: boolean;
 }
