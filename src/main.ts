@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
+  // ✅ เปิด CORS ตั้งแต่ตอนสร้าง app
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalPipes(
