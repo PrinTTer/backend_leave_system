@@ -9,9 +9,10 @@ export interface CalendarResponse {
   calendarType: CalendarTypeEnum;
   title: string;
   description: string | null;
-  startDate: string; // YYYY-MM-DD
-  endDate: string; // YYYY-MM-DD
+  startDate: string;
+  endDate: string;
   dayCount: number;
+  isHoliday: boolean | null;
   createAt: Date;
   updateAt: Date;
 }
@@ -23,19 +24,17 @@ export class CalendarService {
   private calcTotalDays(startDate: string, endDate: string): number {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    // คิดจำนวนวันแบบ "รวมปลาย"
     const diffMs = end.getTime() - start.getTime();
     const oneDayMs = 1000 * 60 * 60 * 24;
     return Math.floor(diffMs / oneDayMs) + 1;
   }
-
-  /** map entity จาก Prisma → response ให้ frontend ใช้ */
   private mapCalendar(c: CalendarModel): CalendarResponse {
     return {
       id: c.calendar_id,
       calendarType: c.calendar_type as CalendarTypeEnum,
       title: c.title,
       description: c.description,
+      isHoliday: c.is_holiday,
       startDate: c.start_date.toISOString().slice(0, 10),
       endDate: c.end_date.toISOString().slice(0, 10),
       dayCount: c.total_day,
@@ -49,7 +48,6 @@ export class CalendarService {
       orderBy: { start_date: 'desc' },
     });
 
-    // ❗ ตรงนี้แหละที่แก้ error no-unsafe-member-access
     return rows.map((c) => this.mapCalendar(c));
   }
 
@@ -77,6 +75,7 @@ export class CalendarService {
         end_date: new Date(dto.endDate),
         total_day: totalDay,
         description: dto.description ?? null,
+        is_holiday: dto.isHoliday ?? null,
         create_at: now,
         update_at: now,
       },
@@ -98,10 +97,12 @@ export class CalendarService {
       typeof dto.startDate === 'string' && dto.startDate.length > 0
         ? dto.startDate
         : existing.start_date.toISOString().slice(0, 10);
+
     const endDate: string =
       typeof dto.endDate === 'string' && dto.endDate.length > 0
         ? dto.endDate
         : existing.end_date.toISOString().slice(0, 10);
+
     const totalDay = this.calcTotalDays(startDate, endDate);
 
     const updated = await this.prisma.calendar.update({
@@ -116,6 +117,7 @@ export class CalendarService {
         end_date: new Date(endDate),
         total_day: totalDay,
         description: dto.description ?? existing.description,
+        is_holiday: dto.isHoliday !== undefined ? dto.isHoliday : existing.is_holiday,
         update_at: new Date(),
       },
     });
