@@ -11,7 +11,7 @@ import {
 
 export enum Gender {
   MALE = 'male',
-  FEMALE = 'femal',
+  FEMALE = 'female',
   ALL = 'all',
 }
 

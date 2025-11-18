@@ -7,6 +7,7 @@ import { LeaveTypeDocumentModule } from './leave-type-document/leave-type-docume
 import { VacationRuleModule } from './vacation-rule/vacation-rule.module';
 import { LeaveApprovalRuleModule } from './leave-approval-rule/leave-approval-rule.module';
 import { FactLeaveCreditModule } from './fact-leave-credit/fact-leave-credit.module';
+import { FactFormModule } from './fact-form/fact-form.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { FactLeaveCreditModule } from './fact-leave-credit/fact-leave-credit.mod
     LeaveApprovalRuleModule,
     FactLeaveCreditModule,
     CalendarModule,
+    FactFormModule,
   ],
   controllers: [AppController],
   providers: [AppService],

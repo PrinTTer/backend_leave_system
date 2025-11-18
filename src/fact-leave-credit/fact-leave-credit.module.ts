@@ -6,5 +6,6 @@ import { PrismaService } from 'src/core/prisma/prisma.service';
 @Module({
   controllers: [FactLeaveCreditController],
   providers: [FactLeaveCreditService, PrismaService],
+  exports: [FactLeaveCreditService],
 })
 export class FactLeaveCreditModule {}
