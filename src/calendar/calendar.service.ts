@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/core/prisma/prisma.service';
-import { calendar as CalendarModel, calendar_calendar_type } from '@prisma/client';
+import { calendar_calendar_type } from '@prisma/client';
 import { CreateCalendarDto, CalendarTypeEnum } from './dto/create-calendar.dto';
-import { UpdateCalendarDto } from './dto/update-calendar.dto';
 
 export interface CalendarResponse {
   id: number;
@@ -17,6 +16,28 @@ export interface CalendarResponse {
   updateAt: Date;
 }
 
+interface CalendarRow {
+  calendar_id: number;
+  calendar_type: calendar_calendar_type;
+  title: string;
+  start_date: Date;
+  end_date: Date;
+  total_day: number;
+  description: string | null;
+  is_holiday: boolean | null;
+  update_at: Date;
+  create_at: Date;
+}
+
+interface UpdateCalendarInput {
+  calendarType?: CalendarTypeEnum;
+  title?: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  isHoliday?: boolean;
+}
+
 @Injectable()
 export class CalendarService {
   constructor(private readonly prisma: PrismaService) {}
@@ -28,7 +49,8 @@ export class CalendarService {
     const oneDayMs = 1000 * 60 * 60 * 24;
     return Math.floor(diffMs / oneDayMs) + 1;
   }
-  private mapCalendar(c: CalendarModel): CalendarResponse {
+
+  private mapCalendar(c: CalendarRow): CalendarResponse {
     return {
       id: c.calendar_id,
       calendarType: c.calendar_type as CalendarTypeEnum,
@@ -48,7 +70,7 @@ export class CalendarService {
       orderBy: { start_date: 'desc' },
     });
 
-    return rows.map((c) => this.mapCalendar(c));
+    return rows.map((c) => this.mapCalendar(c as CalendarRow));
   }
 
   async findOne(id: number): Promise<CalendarResponse> {
@@ -60,7 +82,7 @@ export class CalendarService {
       throw new NotFoundException('ไม่พบกำหนดการ');
     }
 
-    return this.mapCalendar(c);
+    return this.mapCalendar(c as CalendarRow);
   }
 
   async create(dto: CreateCalendarDto): Promise<CalendarResponse> {
@@ -81,10 +103,10 @@ export class CalendarService {
       },
     });
 
-    return this.mapCalendar(created);
+    return this.mapCalendar(created as CalendarRow);
   }
 
-  async update(id: number, dto: UpdateCalendarDto): Promise<CalendarResponse> {
+  async update(id: number, dto: UpdateCalendarInput): Promise<CalendarResponse> {
     const existing = await this.prisma.calendar.findUnique({
       where: { calendar_id: id },
     });
@@ -92,14 +114,13 @@ export class CalendarService {
     if (!existing) {
       throw new NotFoundException('ไม่พบกำหนดการ');
     }
-
-    const startDate: string =
-      typeof dto.startDate === 'string' && dto.startDate.length > 0
+    const startDate =
+      dto.startDate && dto.startDate.length > 0
         ? dto.startDate
         : existing.start_date.toISOString().slice(0, 10);
 
-    const endDate: string =
-      typeof dto.endDate === 'string' && dto.endDate.length > 0
+    const endDate =
+      dto.endDate && dto.endDate.length > 0
         ? dto.endDate
         : existing.end_date.toISOString().slice(0, 10);
 
@@ -122,7 +143,7 @@ export class CalendarService {
       },
     });
 
-    return this.mapCalendar(updated);
+    return this.mapCalendar(updated as CalendarRow);
   }
 
   async remove(id: number): Promise<{ success: true }> {
