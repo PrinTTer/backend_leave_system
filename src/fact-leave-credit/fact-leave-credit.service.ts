@@ -32,9 +32,16 @@ export class FactLeaveCreditService {
   }
 
   // helper: คำนวณสิทธิลาพักผ่อน
-  private calculateAnnual(startDate: string) {
+  private async calculateAnnual(startDate: string | null) {
+    if (!startDate) return 0;
     const serviceYears = this.calculateServiceYear(startDate);
-    return serviceYears >= 1 ? 10 : 0;
+    const rules = await this.prisma.vacation_rule.findMany();
+
+    const matched = rules
+      .filter((r) => r.service_year <= serviceYears)
+      .sort((a, b) => b.service_year - a.service_year)[0];
+
+    return matched ? matched.annual_leave : 0;
   }
 
   async createAllLeaveCreditForOneUser(dto: CreateFactLeaveCreditDto) {
@@ -58,7 +65,7 @@ export class FactLeaveCreditService {
     });
 
     // 5) คำนวณสิทธิลาพักผ่อน
-    const annual = this.calculateAnnual(user.startDate);
+    const annual = await this.calculateAnnual(user.startDate);
 
     const results: FactLeaveCreditResult[] = [];
 
@@ -83,7 +90,7 @@ export class FactLeaveCreditService {
           leave_type_id: lt.leave_type_id,
           used_leave: 0,
           annual_leave: lt.category === 'vacation' ? annual : 0,
-          left_leave: lt.max_leave,
+          left_leave: lt.category === 'vacation' ? annual : lt.max_leave,
         },
       });
 
@@ -127,7 +134,7 @@ export class FactLeaveCreditService {
     for (const user of users) {
       const gender = this.getGenderFromPrefix(user.prefix);
       const serviceYear = this.calculateServiceYear(user.startDate);
-      const annual = this.calculateAnnual(user.startDate);
+      const annual = await this.calculateAnnual(user.startDate);
 
       // เลือก leave type ที่ user คนนี้มีสิทธิ
       const allowedTypes = leaveTypes.filter((lt) => {
@@ -150,7 +157,7 @@ export class FactLeaveCreditService {
           leave_type_id: lt.leave_type_id,
           annual_leave: lt.category === 'vacation' ? annual : 0,
           used_leave: 0,
-          left_leave: lt.max_leave,
+          left_leave: lt.category === 'vacation' ? annual : lt.max_leave,
         });
 
         // เพิ่มลง set ด้วย กันสร้างซ้ำซ้อนในรันเดียวกัน
@@ -216,12 +223,34 @@ export class FactLeaveCreditService {
         where: {
           user_id_leave_type_id: {
             user_id,
-            leave_type_id: dto.leave_type_id,
+            leave_type_id: dto.leave_type_id || 1,
           },
         },
       });
 
-      if (!old) continue;
+      if (!old) {
+        const leaveType = await this.prisma.leave_type.findUnique({
+          where: { leave_type_id: dto.leave_type_id },
+        });
+
+        if (!leaveType) continue;
+
+        const user = UserMock.list.find((u) => u.id === user_id);
+        const annual = await this.calculateAnnual(user?.startDate || '');
+
+        const created = await this.prisma.fact_leave_credit.create({
+          data: {
+            user_id,
+            leave_type_id: dto.leave_type_id ?? 1,
+            used_leave: 0,
+            annual_leave: leaveType.category === 'vacation' ? annual : 0,
+            left_leave: leaveType.category === 'vacation' ? annual : leaveType.max_leave,
+          },
+        });
+
+        results.push(created);
+        continue; // ⭐ หยุด ไม่ต้องไป update ต่อ
+      }
 
       // 2) คำนวณค่าใหม่
       const newAnnual = dto.annual_used_leave
@@ -237,7 +266,7 @@ export class FactLeaveCreditService {
         where: {
           user_id_leave_type_id: {
             user_id,
-            leave_type_id: dto.leave_type_id,
+            leave_type_id: dto.leave_type_id || 1,
           },
         },
         data: {

@@ -5,13 +5,13 @@ import { IsNumber, IsOptional } from 'class-validator';
 export class UpdateFactLeaveCreditDto extends PartialType(CreateFactLeaveCreditDto) {
   @IsNumber()
   @IsOptional()
-  leave_type_id: number;
+  leave_type_id?: number;
 
   @IsNumber()
   @IsOptional()
-  annual_used_leave: number;
+  annual_used_leave?: number;
 
   @IsNumber()
   @IsOptional()
-  used_leave: number;
+  used_leave?: number;
 }
