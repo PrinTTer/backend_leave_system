@@ -52,7 +52,7 @@ export class FactLeaveCreditService {
     const gender = this.getGenderFromPrefix(user.prefix);
 
     // 2) คำนวณอายุงาน
-    const serviceYear = this.calculateServiceYear(user.startDate);
+    const serviceYear = this.calculateServiceYear(user.employment_start_date);
 
     // 3) ดึง leave types ทั้งหมด
     const leaveTypes = await this.prisma.leave_type.findMany();
@@ -65,7 +65,7 @@ export class FactLeaveCreditService {
     });
 
     // 5) คำนวณสิทธิลาพักผ่อน
-    const annual = await this.calculateAnnual(user.startDate);
+    const annual = await this.calculateAnnual(user.employment_start_date);
 
     const results: FactLeaveCreditResult[] = [];
 
@@ -133,8 +133,8 @@ export class FactLeaveCreditService {
     // 4) วนทุก user
     for (const user of users) {
       const gender = this.getGenderFromPrefix(user.prefix);
-      const serviceYear = this.calculateServiceYear(user.startDate);
-      const annual = await this.calculateAnnual(user.startDate);
+      const serviceYear = this.calculateServiceYear(user.employment_start_date);
+      const annual = await this.calculateAnnual(user.employment_start_date);
 
       // เลือก leave type ที่ user คนนี้มีสิทธิ
       const allowedTypes = leaveTypes.filter((lt) => {
@@ -236,7 +236,7 @@ export class FactLeaveCreditService {
         if (!leaveType) continue;
 
         const user = UserMock.list.find((u) => u.id === user_id);
-        const annual = await this.calculateAnnual(user?.startDate || '');
+        const annual = await this.calculateAnnual(user?.employment_start_date || '');
 
         const created = await this.prisma.fact_leave_credit.create({
           data: {

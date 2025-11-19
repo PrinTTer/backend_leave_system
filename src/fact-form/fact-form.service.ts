@@ -59,8 +59,7 @@ export class FactFormService {
 
     // 3) หา approver จาก mock โดยเช็คว่า approvalOrder มีเลขนี้
     const approvers = ApproverMock.list.filter((person) => {
-      const personOrders = person.approvalOrder.split(',').map((n) => Number(n.trim()));
-
+      const personOrders = person.approval_order.map((ao) => ao.priority);
       return personOrders.includes(order);
     });
 
