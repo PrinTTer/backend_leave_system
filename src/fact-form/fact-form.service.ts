@@ -1,10 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/prisma/prisma.service';
-import { CreateFactFormDto, Status } from './dto/create-fact-form.dto';
+import {
+  Assistants,
+  CreateFactFormDto,
+  Expenses,
+  ExtendLeaves,
+  Status,
+  TravelDetails,
+} from './dto/create-fact-form.dto';
 import { FactLeaveCreditService } from 'src/fact-leave-credit/fact-leave-credit.service';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ApproverMock } from 'src/mock/approver.mock';
+import { UpdateFactFormDto } from './dto/update-fact-form.dto';
+import { ApprovalMock } from 'src/mock/approval.mock';
+import { UserMock } from 'src/mock/user.mock';
 
 export interface FactLeaveCreditResult {
   leave_credit_id?: number;
@@ -14,6 +23,61 @@ export interface FactLeaveCreditResult {
   annual_leave: number;
   left_leave: number;
   skip?: boolean;
+}
+
+export interface FactFormJson {
+  user_id: number;
+  leave_type_id: number;
+
+  start_date: string;
+  end_date: string;
+
+  total_day: number;
+  fiscal_year: number;
+
+  status?: Status;
+  note?: string;
+
+  assistants?: Assistants[];
+  countries?: string[];
+  provinces?: string[];
+
+  reason?: string;
+
+  extend_leaves?: ExtendLeaves[];
+
+  expenses?: Expenses;
+
+  travel_details?: TravelDetails;
+
+  attachment?: string;
+
+  leave_type?: any;
+  approvers?: Approval;
+
+  [key: string]: any;
+}
+
+export interface Approval {
+  id: number;
+  other_prefix: string;
+  prefix: string;
+  fullname: string;
+  gender: string;
+  position: string;
+  faculty: string;
+  department: string;
+  employment_start_date: string;
+}
+
+export interface ApprovalConfig {
+  id: number;
+  user_id: number;
+  user: Approval;
+  approver_order1: Approval[];
+  approver_order2: Approval[];
+  approver_order3: Approval[];
+  approver_order4: Approval[];
 }
 
 @Injectable()
@@ -39,32 +103,39 @@ export class FactFormService {
     return fileName;
   }
 
-  private async getApprover(leaveTypeId: number, leaveDays: number) {
-    // 1) ดึง rule
-    const rules = await this.prisma.leave_approval_rule.findMany({
+  private async getApprover(leaveTypeId: number, leaveDays: number, user_id: number) {
+    // 1) หา rule ระดับสูงสุดที่ตรง
+    const rule = await this.prisma.leave_approval_rule.findFirst({
       where: {
         leave_type_id: leaveTypeId,
-        leave_less_than: {
-          gte: leaveDays,
-        },
+        leave_less_than: { gte: leaveDays },
       },
       orderBy: { leave_less_than: 'asc' },
     });
 
-    // ถ้าไม่เจอกฎเลย → ไม่มี approver
-    if (rules.length === 0) return [];
+    if (!rule) return [];
 
-    // 2) เลือก rule ที่น้อยที่สุด (ลาพักร้อน 10 วัน → ใช้ 15)
-    const rule = rules[0];
+    const maxLevel = rule.approval_level;
 
-    // rule.approval_level = order ขั้นตอนที่ต้องอนุมัติ
-    const order = rule.approval_level;
+    // 2) หา config ของ user
+    const config = ApprovalMock.list.find((a) => a.user_id === user_id);
 
-    // 3) หา approver จาก mock โดยเช็คว่า approvalOrder มีเลขนี้
-    const approvers = ApproverMock.list.filter((person) => {
-      const personOrders = person.approval_order.map((ao) => ao.priority);
-      return personOrders.includes(order);
-    });
+    if (!config) {
+      throw new Error(`No approver config found for user_id=${user_id}`);
+    }
+
+    // 3) รวม approver ทุก level ที่ต้องใช้
+    const approvers: Approval[] = [];
+
+    for (let lvl = 1; lvl <= maxLevel; lvl++) {
+      const key = `approver_order${lvl}` as keyof ApprovalConfig;
+      const approverList = config[key] as Approval[];
+      approvers.push(...approverList);
+    }
+
+    if (approvers.length === 0) {
+      throw new Error(`No approvers found for user_id=${user_id}`);
+    }
 
     return approvers;
   }
@@ -76,19 +147,26 @@ export class FactFormService {
       },
     });
 
-    const approval = await this.getApprover(leaveType?.number_approver || 1, dto.total_day);
+    const approval = await this.getApprover(
+      leaveType?.leave_type_id || 1,
+      dto.total_day,
+      dto.user_id,
+    );
+
+    console.log('approval', approval);
 
     const leaveForm = {
       ...dto,
       leaveType,
-      approvers: {
-        approval: approval.map((a) => [
-          {
-            ...a,
-          },
-          { status: Status.Pending },
-        ]),
-      },
+      approvers: approval.map((a) => [
+        {
+          id: a.id,
+          name: a.fullname,
+        },
+        {
+          status: Status.Pending,
+        },
+      ]),
     };
 
     // 2) สรุปจำนวนวันลาตามประเภท
@@ -109,11 +187,11 @@ export class FactFormService {
     }
 
     // 3) อัปเดต fact_leave_credit
-    const updatedCredits = await this.factLeaveCreditService.update(dto.user_id, creditPayload);
+    await this.factLeaveCreditService.update(dto.user_id, creditPayload);
 
     const jsonPath = this.saveJsonToFile(dto.user_id, dto.leave_type_id, leaveForm);
 
-    const creatLeaveForm = await this.prisma.fact_form.create({
+    const form = await this.prisma.fact_form.create({
       data: {
         user_id: dto.user_id,
         leave_type_id: dto.leave_type_id,
@@ -135,16 +213,117 @@ export class FactFormService {
         data: {
           aprover_id: a.id,
           user_id: dto.user_id,
-          fact_form_id: creatLeaveForm.fact_form_id,
+          fact_form_id: form.fact_form_id,
           status: Status.Pending,
         },
       });
     }
 
     return {
-      leaveForm,
-      updatedCredits,
-      creatLeaveForm,
+      ...leaveForm,
+      form,
+    };
+  }
+
+  private readJsonFile(userId: number, fileName: string) {
+    const filePath = path.join(process.cwd(), 'uploads/leave_json/', String(userId), fileName);
+
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`JSON file not found: ${fileName}`);
+    }
+
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(fileContent) as FactFormJson;
+  }
+
+  private updateJsonFile(userId: number, fileName: string, newData: any) {
+    const filePath = path.join(process.cwd(), 'uploads/leave_json/', String(userId), fileName);
+
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`JSON file not found: ${fileName}`);
+    }
+
+    fs.writeFileSync(filePath, JSON.stringify(newData, null, 2));
+    return true;
+  }
+
+  async updateFactForm(user_id: number, fact_form_id: number, data: UpdateFactFormDto) {
+    const factForm = await this.prisma.fact_form.findUnique({
+      where: { fact_form_id },
+    });
+
+    if (!factForm) throw new Error(`Fact form id: ${fact_form_id} not found!`);
+
+    const oldJson = this.readJsonFile(user_id, factForm.file_leave);
+    const newJson = { ...oldJson, ...data };
+    this.updateJsonFile(user_id, factForm.file_leave, newJson);
+
+    await this.factLeaveCreditService.updateEditLeave(
+      user_id,
+      data.leave_type_id,
+      oldJson.total_day,
+      newJson.total_day,
+    );
+
+    if (data.extend_leaves && data.extend_leaves.length > 0) {
+      const oldExtend = oldJson.extend_leaves ?? [];
+
+      for (let i = 0; i < data.extend_leaves.length; i++) {
+        const newItem = data.extend_leaves[i];
+
+        const newDay = newItem.total_days;
+
+        const oldDay = oldExtend[i]?.total_days ?? 0;
+
+        await this.factLeaveCreditService.updateEditLeave(
+          user_id,
+          newItem.leave_type_id,
+          oldDay,
+          newDay,
+        );
+      }
+    }
+
+    const updateLeaveForm = await this.prisma.fact_form.update({
+      where: { fact_form_id },
+      data: {
+        user_id: data.user_id,
+        leave_type_id: data.leave_type_id,
+        start_date: new Date(data.start_date + 'T00:00:00.000Z'),
+        end_date: new Date(data.end_date + 'T00:00:00.000Z'),
+        total_day: data.total_day,
+        fiscal_year: data.fiscal_year,
+        status: data.status || Status.Pending,
+        approve_date: new Date(),
+        note: data.note,
+        update_at: new Date(),
+        file_leave: factForm.file_leave,
+      },
+    });
+
+    const file = this.readJsonFile(user_id, factForm.file_leave);
+
+    return {
+      updateLeaveForm,
+      file,
+    };
+  }
+
+  async findOneFactForm(fact_form_id: number) {
+    const factForm = await this.prisma.fact_form.findUnique({
+      where: {
+        fact_form_id,
+      },
+    });
+
+    if (!factForm) throw new Error('Can not find fact form');
+    const form = this.readJsonFile(factForm?.user_id, factForm.file_leave);
+    const user = UserMock.list.filter((u) => u.id === factForm.user_id);
+
+    return {
+      ...factForm,
+      form,
+      user,
     };
   }
 }
