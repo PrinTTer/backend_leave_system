@@ -4,7 +4,7 @@ export interface Assistants {
   user_id: number;
 }
 
-export interface AxtendLeaves {
+export interface ExtendLeaves {
   leave_type_id: number;
   leave_dates: Date[];
   total_days: number;
@@ -81,7 +81,7 @@ export class CreateFactFormDto {
   reason?: string;
 
   @IsOptional()
-  extend_leaves?: AxtendLeaves[];
+  extend_leaves?: ExtendLeaves[];
 
   @IsOptional()
   expenses?: Expenses;

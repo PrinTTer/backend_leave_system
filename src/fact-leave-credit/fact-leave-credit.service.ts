@@ -217,66 +217,71 @@ export class FactLeaveCreditService {
   async update(user_id: number, dtos: UpdateFactLeaveCreditDto[]) {
     const results: FactLeaveCreditResult[] = [];
 
+    if (!dtos) {
+      throw new Error(`No data to update`);
+    }
+
     for (const dto of dtos) {
-      // 1) หา record เดิมก่อน
-      const old = await this.prisma.fact_leave_credit.findUnique({
+      const leaveTypeId = dto.leave_type_id;
+
+      // 1) หาของเดิม
+      let record = await this.prisma.fact_leave_credit.findUnique({
         where: {
           user_id_leave_type_id: {
             user_id,
-            leave_type_id: dto.leave_type_id || 1,
+            leave_type_id: leaveTypeId,
           },
         },
       });
 
-      if (!old) {
+      // 2) ถ้าไม่เจอ -> สร้าง record ใหม่เฉพาะ leave_type นี้
+      if (!record) {
         const leaveType = await this.prisma.leave_type.findUnique({
-          where: { leave_type_id: dto.leave_type_id },
+          where: { leave_type_id: leaveTypeId },
         });
 
         if (!leaveType) continue;
 
-<<<<<<< HEAD
+        // คำนวณสิทธิลาพักร้อนถ้าจำเป็น
         const user = UserMock.list.find((u) => u.id === user_id);
-        const annual = await this.calculateAnnual(user?.employment_start_date || '');
+        if (!user) {
+          throw new Error(`User with id ${user_id} not found in UserMock`);
+        }
 
-        const created = await this.prisma.fact_leave_credit.create({
+        const annual = await this.calculateAnnual(user.employment_start_date);
+
+        // max leave ถ้าไม่ใช่ vacation
+        const defaultLeft = leaveType.category === 'vacation' ? annual : leaveType.max_leave;
+
+        // สร้าง record ใหม่เฉพาะ leave_type นี้
+        record = await this.prisma.fact_leave_credit.create({
           data: {
             user_id,
-            leave_type_id: dto.leave_type_id ?? 1,
+            leave_type_id: leaveTypeId,
             used_leave: 0,
             annual_leave: leaveType.category === 'vacation' ? annual : 0,
-            left_leave: leaveType.category === 'vacation' ? annual : leaveType.max_leave,
+            left_leave: defaultLeft,
           },
         });
 
-        results.push(created);
-
-        const createdAll = await this.createAllLeaveCreditForOneUser({ user_id });
-        results.push(...createdAll);
-
-        continue; // ⭐ หยุด ไม่ต้องไป update ต่อ
-=======
-        const created = await this.createAllLeaveCreditForOneUser({ user_id });
-        results.push(...created);
-        continue;
->>>>>>> 9a1c581 (fix: create fact form and migration apporval)
+        await this.createAllLeaveCreditForOneUser({ user_id });
       }
 
-      // 2) คำนวณค่าใหม่
+      // 3) คำนวณค่าใหม่
       const newAnnual = dto.annual_used_leave
-        ? old.annual_leave - dto.annual_used_leave
-        : old.annual_leave;
+        ? record.annual_leave - dto.annual_used_leave
+        : record.annual_leave;
 
-      const newUsed = dto.used_leave ? old.used_leave + dto.used_leave : old.used_leave;
+      const newUsed = dto.used_leave ? record.used_leave + dto.used_leave : record.used_leave;
 
-      const newLeft = dto.used_leave ? old.left_leave - dto.used_leave : old.left_leave;
+      const newLeft = dto.used_leave ? record.left_leave - dto.used_leave : record.left_leave;
 
-      // 3) อัปเดตจริง
+      // 4) update record
       const updated = await this.prisma.fact_leave_credit.update({
         where: {
           user_id_leave_type_id: {
             user_id,
-            leave_type_id: dto.leave_type_id || 1,
+            leave_type_id: leaveTypeId,
           },
         },
         data: {
@@ -299,6 +304,33 @@ export class FactLeaveCreditService {
           user_id,
           leave_type_id,
         },
+      },
+    });
+  }
+
+  async updateEditLeave(user_id: number, leave_type_id: number, oldDay: number, newDay: number) {
+    const record = await this.prisma.fact_leave_credit.findUnique({
+      where: { user_id_leave_type_id: { user_id, leave_type_id } },
+    });
+
+    if (!record) throw new Error('can not find fact_leave_credit');
+
+    let new_used_leave = 0;
+    let new_left_leave = 0;
+
+    if (record.used_leave == 0) {
+      new_used_leave = newDay;
+      new_left_leave = record.left_leave - newDay;
+    } else {
+      new_used_leave = record.used_leave - oldDay + newDay;
+      new_left_leave = record.left_leave + oldDay - newDay;
+    }
+
+    return this.prisma.fact_leave_credit.update({
+      where: { user_id_leave_type_id: { user_id, leave_type_id } },
+      data: {
+        used_leave: new_used_leave,
+        left_leave: new_left_leave,
       },
     });
   }
