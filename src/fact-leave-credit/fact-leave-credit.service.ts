@@ -235,6 +235,7 @@ export class FactLeaveCreditService {
 
         if (!leaveType) continue;
 
+<<<<<<< HEAD
         const user = UserMock.list.find((u) => u.id === user_id);
         const annual = await this.calculateAnnual(user?.employment_start_date || '');
 
@@ -254,6 +255,11 @@ export class FactLeaveCreditService {
         results.push(...createdAll);
 
         continue; // ⭐ หยุด ไม่ต้องไป update ต่อ
+=======
+        const created = await this.createAllLeaveCreditForOneUser({ user_id });
+        results.push(...created);
+        continue;
+>>>>>>> 9a1c581 (fix: create fact form and migration apporval)
       }
 
       // 2) คำนวณค่าใหม่
