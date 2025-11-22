@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE `calendar` (
-    `calendar_id` INTEGER NOT NULL,
+    `calendar_id` INTEGER NOT NULL AUTO_INCREMENT,
     `calendar_type` ENUM('holiday', 'academic', 'fiscal') NOT NULL,
     `title` VARCHAR(100) NOT NULL,
     `start_date` DATE NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE `calendar` (
 
 -- CreateTable
 CREATE TABLE `fact_form` (
-    `fact_form_id` VARCHAR(45) NOT NULL,
+    `fact_form_id` INTEGER NOT NULL AUTO_INCREMENT,
     `user_id` INTEGER NOT NULL,
     `leave_type_id` INTEGER NOT NULL,
     `start_date` DATE NOT NULL,
@@ -29,13 +29,13 @@ CREATE TABLE `fact_form` (
     `update_at` TIMESTAMP(0) NOT NULL,
     `create_at` TIMESTAMP(0) NOT NULL,
 
-    INDEX `fk_fact_form_leave_type_idx`(`leave_type_id`),
+    INDEX `fk_fact_form_leave_type1_idx`(`leave_type_id`),
     PRIMARY KEY (`fact_form_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE `leave_approval_rule` (
-    `leave_approval_rule_id` INTEGER NOT NULL,
+    `leave_approval_rule_id` INTEGER NOT NULL AUTO_INCREMENT,
     `leave_type_id` INTEGER NOT NULL,
     `leave_less_than` INTEGER NOT NULL,
     `approval_level` INTEGER NOT NULL,
@@ -46,10 +46,10 @@ CREATE TABLE `leave_approval_rule` (
 
 -- CreateTable
 CREATE TABLE `leave_type` (
-    `leave_type_id` INTEGER NOT NULL,
+    `leave_type_id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(100) NOT NULL,
     `gender` ENUM('male', 'femal', 'all') NOT NULL DEFAULT 'all',
-    `is_count_vacation` TINYINT NOT NULL,
+    `is_count_vacation` TINYINT NOT NULL DEFAULT 0,
     `service_year` INTEGER NOT NULL,
     `number_approver` INTEGER NOT NULL,
     `category` ENUM('general', 'vacation') NOT NULL,
@@ -61,11 +61,11 @@ CREATE TABLE `leave_type` (
 
 -- CreateTable
 CREATE TABLE `leave_type_document` (
-    `leave_type_document_id` INTEGER NOT NULL,
+    `leave_type_document_id` INTEGER NOT NULL AUTO_INCREMENT,
     `leave_type_id` INTEGER NOT NULL,
     `name` VARCHAR(100) NOT NULL,
     `file_type` ENUM('pdf', 'png', 'doc', 'jpg') NOT NULL,
-    `is_required` TINYINT NOT NULL,
+    `is_required` TINYINT NOT NULL DEFAULT 0,
 
     INDEX `fk_leave_type_document_leave_type1_idx`(`leave_type_id`),
     PRIMARY KEY (`leave_type_document_id`)
@@ -73,7 +73,7 @@ CREATE TABLE `leave_type_document` (
 
 -- CreateTable
 CREATE TABLE `vacation_rule` (
-    `vacation_rule_id` INTEGER NOT NULL,
+    `vacation_rule_id` INTEGER NOT NULL AUTO_INCREMENT,
     `leave_type_id` INTEGER NOT NULL,
     `service_year` INTEGER NOT NULL,
     `annual_leave` INTEGER NOT NULL,
@@ -87,12 +87,11 @@ CREATE TABLE `vacation_rule` (
 CREATE TABLE `approval` (
     `user_id` INTEGER NOT NULL,
     `aprover_id` INTEGER NOT NULL,
-    `fact_form_id` VARCHAR(45) NOT NULL,
+    `fact_form_id` INTEGER NOT NULL,
     `status` ENUM('approve', 'reject', 'pending') NOT NULL,
 
     UNIQUE INDEX `user_id_UNIQUE`(`user_id`),
     UNIQUE INDEX `aprover_id_UNIQUE`(`aprover_id`),
-    UNIQUE INDEX `fact_form_fact_form_id_UNIQUE`(`fact_form_id`),
     INDEX `fk_approval_fact_form1_idx`(`fact_form_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -105,7 +104,6 @@ CREATE TABLE `fact_leave_credit` (
     `left_leave` FLOAT NOT NULL,
 
     UNIQUE INDEX `user_id_UNIQUE`(`user_id`),
-    UNIQUE INDEX `leave_type_id_UNIQUE`(`leave_type_id`),
     INDEX `fk_fact_leave_credit_leave_type1_idx`(`leave_type_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
