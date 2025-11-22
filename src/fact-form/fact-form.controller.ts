@@ -1,6 +1,7 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Patch, Param, Get } from '@nestjs/common';
 import { FactFormService } from './fact-form.service';
 import { CreateFactFormDto } from './dto/create-fact-form.dto';
+import { UpdateFactFormDto } from './dto/update-fact-form.dto';
 
 @Controller('fact-form')
 export class FactFormController {
@@ -9,5 +10,19 @@ export class FactFormController {
   @Post()
   create(@Body() dto: CreateFactFormDto) {
     return this.service.createLeave(dto);
+  }
+
+  @Get(':fact_form_id')
+  findOne(@Param('fact_form_id') fact_form_id: string) {
+    return this.service.findOneFactForm(Number(fact_form_id));
+  }
+
+  @Patch(':user_id/:fact_form_id')
+  update(
+    @Param('user_id') user_id: string,
+    @Param('fact_form_id') fact_form_id: string,
+    @Body() updateDto: UpdateFactFormDto,
+  ) {
+    return this.service.updateFactForm(Number(user_id), Number(fact_form_id), updateDto);
   }
 }

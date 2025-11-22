@@ -4,8 +4,7 @@ import { IsNumber, IsOptional } from 'class-validator';
 
 export class UpdateFactLeaveCreditDto extends PartialType(CreateFactLeaveCreditDto) {
   @IsNumber()
-  @IsOptional()
-  leave_type_id?: number;
+  leave_type_id: number;
 
   @IsNumber()
   @IsOptional()
