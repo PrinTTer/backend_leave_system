@@ -30,10 +30,13 @@ export class FactFormService {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    const filePath = path.join(dir, `${userId}_${leave_type_id}_${Date.now()}.json`);
+    const timestamp = Date.now(); // <= จุดสำคัญ!
+    const fileName = `${userId}_${leave_type_id}_${timestamp}.json`;
+    const filePath = path.join(dir, fileName);
+
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 
-    return `${userId}_${leave_type_id}_${Date.now()}.json`;
+    return fileName;
   }
 
   private async getApprover(leaveTypeId: number, leaveDays: number) {
@@ -126,6 +129,18 @@ export class FactFormService {
         update_at: new Date(),
       },
     });
+
+    for (const a of approval) {
+      await this.prisma.approval.create({
+        data: {
+          aprover_id: a.id,
+          user_id: dto.user_id,
+          fact_form_id: creatLeaveForm.fact_form_id,
+          status: Status.Pending,
+        },
+      });
+    }
+
     return {
       leaveForm,
       updatedCredits,

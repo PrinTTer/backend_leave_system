@@ -249,6 +249,10 @@ export class FactLeaveCreditService {
         });
 
         results.push(created);
+
+        const createdAll = await this.createAllLeaveCreditForOneUser({ user_id });
+        results.push(...createdAll);
+
         continue; // ⭐ หยุด ไม่ต้องไป update ต่อ
       }
 
