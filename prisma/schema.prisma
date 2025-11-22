@@ -91,13 +91,15 @@ model vacation_rule {
 }
 
 model approval {
-  user_id      Int             @unique(map: "user_id_UNIQUE")
-  aprover_id   Int             @unique(map: "aprover_id_UNIQUE")
+  user_id      Int            
+  aprover_id   Int            
   fact_form_id Int
   status       approval_status
   fact_form    fact_form       @relation(fields: [fact_form_id], references: [fact_form_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_approval_fact_form1")
 
   @@index([fact_form_id], map: "fk_approval_fact_form1_idx")
+  @@unique([user_id, aprover_id, fact_form_id], map: "unique_user_approver_form")
+  @@id([user_id, aprover_id, fact_form_id])
 }
 
 model fact_leave_credit {
