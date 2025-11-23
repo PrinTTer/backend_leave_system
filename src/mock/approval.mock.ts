@@ -1,7 +1,56 @@
+import { User } from './user.mock';
+export interface Requester {
+  user_id: number;
+  user: User | null;
+  approver_order1: {
+    id: number;
+    other_prefix: string;
+    prefix: string;
+    fullname: string;
+    gender: string;
+    position: string;
+    faculty: string;
+    department: string;
+    employment_start_date: string;
+  }[];
+  approver_order2: {
+    id: number;
+    other_prefix: string;
+    prefix: string;
+    fullname: string;
+    gender: string;
+    position: string;
+    faculty: string;
+    department: string;
+    employment_start_date: string;
+  }[];
+  approver_order3: {
+    id: number;
+    other_prefix: string;
+    prefix: string;
+    fullname: string;
+    gender: string;
+    position: string;
+    faculty: string;
+    department: string;
+    employment_start_date: string;
+  }[];
+  approver_order4: {
+    id: number;
+    other_prefix: string;
+    prefix: string;
+    fullname: string;
+    gender: string;
+    position: string;
+    faculty: string;
+    department: string;
+    employment_start_date: string;
+  }[];
+}
+
 export const ApprovalMock = {
   list: [
     {
-      id: 1,
       user_id: 1,
       user: {
         id: 1,
@@ -43,7 +92,6 @@ export const ApprovalMock = {
       approver_order4: [],
     },
     {
-      id: 2,
       user_id: 2,
       user: {
         id: 2,

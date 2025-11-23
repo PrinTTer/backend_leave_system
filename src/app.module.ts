@@ -8,7 +8,8 @@ import { VacationRuleModule } from './vacation-rule/vacation-rule.module';
 import { LeaveApprovalRuleModule } from './leave-approval-rule/leave-approval-rule.module';
 import { FactLeaveCreditModule } from './fact-leave-credit/fact-leave-credit.module';
 import { FactFormModule } from './fact-form/fact-form.module';
-import { LeaveVisibilityService } from './leave-visibility/leave-visibility.service';
+import { RequesterModule } from './requester/requester.module';
+import { ApprovalModule } from './approval/approval.module';
 import { LeaveVisibilityModule } from './leave-visibility/leave-visibility.module';
 
 @Module({
@@ -20,6 +21,8 @@ import { LeaveVisibilityModule } from './leave-visibility/leave-visibility.modul
     FactLeaveCreditModule,
     CalendarModule,
     FactFormModule,
+    RequesterModule,
+    ApprovalModule,
     LeaveVisibilityModule,
   ],
   controllers: [AppController],

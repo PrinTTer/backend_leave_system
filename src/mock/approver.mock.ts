@@ -1,3 +1,21 @@
+export interface Approver {
+  id: number;
+  other_prefix: string;
+  prefix: string;
+  fullname: string;
+  gender: string;
+  position: string;
+  faculty: string;
+  department: string;
+  employment_start_date: string;
+  approve_position: string;
+  approval_order: {
+    role_id: number;
+    thai_name: string;
+    priority: number;
+  }[];
+}
+
 export const ApproverMock = {
   list: [
     {
