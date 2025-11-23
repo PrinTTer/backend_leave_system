@@ -1,3 +1,15 @@
+export interface Role {
+  user_id: number;
+  nontri_id: number;
+  approve_position: string;
+  role: {
+    role_id: number;
+    thai_name: string;
+    priority: number;
+    visibility: string;
+  }[];
+}
+
 export const Role = {
   list: [
     {

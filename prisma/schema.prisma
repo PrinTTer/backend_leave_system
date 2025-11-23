@@ -15,9 +15,9 @@ model calendar {
   end_date      DateTime               @db.Date
   total_day     Int
   description   String?                @db.Text
+  update_at     DateTime               @updatedAt @db.Timestamp(0)
+  create_at     DateTime               @default(now()) @db.Timestamp(0)
   is_holiday    Boolean?
-  update_at     DateTime               @db.Timestamp(0) @updatedAt
-  create_at     DateTime               @db.Timestamp(0) @default(now())
 }
 
 model fact_form {
@@ -32,8 +32,8 @@ model fact_form {
   approve_date  DateTime         @db.Date
   note          String?          @db.VarChar(225)
   file_leave    String           @db.VarChar(45)
-  update_at     DateTime         @db.Timestamp(0) @updatedAt
-  create_at     DateTime         @db.Timestamp(0) @default(now())
+  update_at     DateTime         @updatedAt @db.Timestamp(0)
+  create_at     DateTime         @default(now()) @db.Timestamp(0)
   approval      approval[]
   leave_type    leave_type       @relation(fields: [leave_type_id], references: [leave_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_fact_form_leave_type")
 
@@ -57,10 +57,10 @@ model leave_type {
   is_count_vacation   Boolean               @default(false)
   service_year        Int
   number_approver     Int
-  max_leave           Int
   category            leave_type_category
-  update_at           DateTime              @db.Timestamp(0) @updatedAt
-  create_at           DateTime              @db.Timestamp(0) @default(now())
+  update_at           DateTime              @updatedAt @db.Timestamp(0)
+  create_at           DateTime              @default(now()) @db.Timestamp(0)
+  max_leave           Int
   fact_form           fact_form[]
   fact_leave_credit   fact_leave_credit[]
   leave_approval_rule leave_approval_rule[]
@@ -101,27 +101,35 @@ model vacation_rule {
 }
 
 model approval {
-  user_id      Int            
-  aprover_id   Int            
+  user_id      Int
+  approver_id  Int
   fact_form_id Int
   status       approval_status
   fact_form    fact_form       @relation(fields: [fact_form_id], references: [fact_form_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_approval_fact_form1")
 
+  @@id([user_id, approver_id, fact_form_id])
+  @@unique([user_id, approver_id, fact_form_id], map: "unique_user_approver_form")
   @@index([fact_form_id], map: "fk_approval_fact_form1_idx")
-  @@unique([user_id, aprover_id, fact_form_id], map: "unique_user_approver_form")
-  @@id([user_id, aprover_id, fact_form_id])
 }
 
 model fact_leave_credit {
-  user_id       Int        
+  user_id       Int
   leave_type_id Int
   annual_leave  Float      @db.Float
   used_leave    Float      @db.Float
   left_leave    Float      @db.Float
   leave_type    leave_type @relation(fields: [leave_type_id], references: [leave_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_fact_leave_credit_leave_type1")
 
-  @@index([leave_type_id], map: "fk_fact_leave_credit_leave_type1_idx")
   @@id([user_id, leave_type_id])
+  @@index([leave_type_id], map: "fk_fact_leave_credit_leave_type1_idx")
+}
+
+model requester {
+  user_id        Int
+  approver_id    Int
+  approver_order Int
+
+  @@unique([user_id, approver_id, approver_order], map: "user_id")
 }
 
 enum calendar_calendar_type {
