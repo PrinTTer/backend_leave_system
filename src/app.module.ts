@@ -8,6 +8,8 @@ import { VacationRuleModule } from './vacation-rule/vacation-rule.module';
 import { LeaveApprovalRuleModule } from './leave-approval-rule/leave-approval-rule.module';
 import { FactLeaveCreditModule } from './fact-leave-credit/fact-leave-credit.module';
 import { FactFormModule } from './fact-form/fact-form.module';
+import { LeaveVisibilityService } from './leave-visibility/leave-visibility.service';
+import { LeaveVisibilityModule } from './leave-visibility/leave-visibility.module';
 
 @Module({
   imports: [
@@ -18,8 +20,9 @@ import { FactFormModule } from './fact-form/fact-form.module';
     FactLeaveCreditModule,
     CalendarModule,
     FactFormModule,
+    LeaveVisibilityModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, LeaveVisibilityService],
 })
 export class AppModule {}
