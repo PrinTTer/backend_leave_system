@@ -11,9 +11,11 @@ import { FactFormModule } from './fact-form/fact-form.module';
 import { RequesterModule } from './requester/requester.module';
 import { ApprovalModule } from './approval/approval.module';
 import { LeaveVisibilityModule } from './leave-visibility/leave-visibility.module';
+import { ApproverModule } from './approver/approver.module';
 
 @Module({
   imports: [
+    ApproverModule,
     LeaveTypeModule,
     LeaveTypeDocumentModule,
     VacationRuleModule,
@@ -24,6 +26,7 @@ import { LeaveVisibilityModule } from './leave-visibility/leave-visibility.modul
     RequesterModule,
     ApprovalModule,
     LeaveVisibilityModule,
+    ApproverModule,
   ],
   controllers: [AppController],
   providers: [AppService, LeaveVisibilityService],
