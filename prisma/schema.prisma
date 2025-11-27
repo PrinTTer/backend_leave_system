@@ -79,6 +79,16 @@ model leave_type_document {
   @@index([leave_type_id], map: "fk_leave_type_document_leave_type1_idx")
 }
 
+model leave_visibility {
+  leave_visibility_id Int      @id @default(autoincrement())
+  viewer_user_id      Int
+  target_user_id      Int
+  created_by_user_id  Int?
+  created_at          DateTime @default(now())
+  @@unique([viewer_user_id, target_user_id], map: "uk_viewer_target")
+  @@map("leave_visibility")
+}
+
 model vacation_rule {
   vacation_rule_id Int        @id @default(autoincrement())
   leave_type_id    Int

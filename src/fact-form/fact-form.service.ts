@@ -14,6 +14,7 @@ import * as path from 'path';
 import { UpdateFactFormDto } from './dto/update-fact-form.dto';
 import { ApprovalMock } from 'src/mock/approval.mock';
 import { UserMock } from 'src/mock/user.mock';
+import { fact_form_status } from '@prisma/client';
 
 export interface FactLeaveCreditResult {
   leave_credit_id?: number;
@@ -325,5 +326,53 @@ export class FactFormService {
       form,
       user,
     };
+  }
+
+  async getLeavesForCalendar(viewer_user_id: number, start: string, end: string) {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    // 1) หา targetIds จาก leave_visibility
+    const visibility = await this.prisma.leave_visibility.findMany({
+      where: {
+        viewer_user_id: viewer_user_id,
+      },
+    });
+
+    const targetIds = visibility.map((v) => v.target_user_id);
+
+    // ให้คนดูเห็นใบลาของตัวเองเสมอ
+    if (!targetIds.includes(viewer_user_id)) {
+      targetIds.push(viewer_user_id);
+    }
+
+    if (targetIds.length === 0) {
+      return [];
+    }
+
+    // 2) ดึง fact_form ของ user เหล่านั้น ที่ approve แล้ว และอยู่ในช่วงวัน
+    const forms = await this.prisma.fact_form.findMany({
+      where: {
+        user_id: { in: targetIds },
+        status: fact_form_status.approve, // หรือ Status.Approve ถ้าคุณ map เป็น enum TS เอง
+        // overlap ช่วงวันที่ กับ calendar range
+        AND: [{ start_date: { lte: endDate } }, { end_date: { gte: startDate } }],
+      },
+      include: {
+        leave_type: true,
+      },
+    });
+
+    // 3) map เป็นรูปแบบ event ที่ frontend ใช้ง่าย
+    return forms.map((f) => ({
+      id: f.fact_form_id,
+      user_id: f.user_id,
+      title: f.leave_type.name, // ชื่อประเภทการลา
+      start: f.start_date,
+      end: f.end_date,
+      status: f.status,
+      leave_type_id: f.leave_type_id,
+      total_day: f.total_day,
+    }));
   }
 }
