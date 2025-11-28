@@ -1,15 +1,15 @@
-import { IsInt, IsOptional } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class UpdateLeaveVisibilityDto {
   @IsOptional()
-  @IsInt()
-  viewer_user_id?: number;
+  @IsString()
+  viewer_nontri_account?: string;
 
   @IsOptional()
-  @IsInt()
-  target_user_id?: number;
+  @IsString()
+  target_nontri_account?: string;
 
   @IsOptional()
-  @IsInt()
-  created_by_user_id?: number;
+  @IsString()
+  created_by_nontri_account?: string;
 }

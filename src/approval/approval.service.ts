@@ -10,8 +10,8 @@ export class ApprovalService {
   async createApproval(dto: CreateApprovalDto[]) {
     return await this.prisma.approval.createMany({
       data: dto.map((dto) => ({
-        user_id: dto.user_id,
-        approver_id: dto.approver_id,
+        nontri_account: dto.nontri_account,
+        approver_nontri_account: dto.nontri_account,
         fact_form_id: dto.fact_form_id,
         status: ApprovalStatus.PENDING,
       })),
@@ -20,18 +20,18 @@ export class ApprovalService {
   async updateApprovalStatus(dto: UpdateApprovalDto) {
     return await this.prisma.approval.updateMany({
       where: {
-        user_id: dto.user_id,
+        nontri_account: dto.nontri_account,
         fact_form_id: dto.fact_form_id,
-        approver_id: dto.approver_id,
+        approver_nontri_account: dto.approver_nontri_account,
       },
       data: {
         status: dto.status,
       },
     });
   }
-  async getApprovalsByUserId(userId: number) {
+  async getApprovalsByUserId(nontri_account: string) {
     const req = await this.prisma.approval.findMany({
-      where: { user_id: userId },
+      where: { nontri_account: nontri_account },
       include: {
         fact_form: {
           include: {
@@ -40,7 +40,7 @@ export class ApprovalService {
         },
       },
     });
-    const user = UserMock.list.find((u) => u.id === userId) || null;
+    const user = UserMock.list.find((u) => u.nontri_account === nontri_account) || null;
     return {
       approvals: req,
       user: user,

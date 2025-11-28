@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsNotEmpty } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsString } from 'class-validator';
 
 export enum ApprovalStatus {
   PENDING = 'pending',
@@ -7,12 +7,12 @@ export enum ApprovalStatus {
 }
 export class CreateApprovalDto {
   @IsNotEmpty()
-  @IsInt()
-  user_id: number;
+  @IsString()
+  nontri_account: string;
 
   @IsNotEmpty()
-  @IsInt()
-  approver_id: number;
+  @IsString()
+  approver_nontri_account: string;
 
   @IsNotEmpty()
   @IsInt()

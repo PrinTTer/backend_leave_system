@@ -55,36 +55,36 @@ export class LeaveVisibilityController {
   // ======== helper endpoint เพิ่มเติม เอาไว้ใช้หน้า calendar / admin ========
 
   // ดึงว่า viewer คนนี้เห็นใครบ้าง
-  @Get('viewer/:viewer_user_id')
-  findTargetsForViewer(@Param('viewer_user_id', ParseIntPipe) viewer_user_id: number) {
-    return this.leaveVisibilityService.findTargetsForViewer(viewer_user_id);
+  @Get('viewer/:viewer_nontri_account')
+  findTargetsForViewer(@Param('viewer_nontri_account') viewer_nontri_account: string) {
+    return this.leaveVisibilityService.findTargetsForViewer(viewer_nontri_account);
   }
 
   // ดึงว่าใครบ้างเห็น user นี้
-  @Get('target/:target_user_id')
-  findViewersForTarget(@Param('target_user_id', ParseIntPipe) target_user_id: number) {
-    return this.leaveVisibilityService.findViewersForTarget(target_user_id);
+  @Get('target/:target_nontri_account')
+  findViewersForTarget(@Param('target_nontri_account') target_nontri_account: string) {
+    return this.leaveVisibilityService.findViewersForTarget(target_nontri_account);
   }
 
   // เช็คแบบจุด ๆ ว่า viewer คนนี้เห็น target คนนี้ไหม (true/false)
-  @Get('can-view/:viewer_user_id/:target_user_id')
+  @Get('can-view/:viewer_nontri_account/:target_nontri_account')
   async canViewerSeeTarget(
-    @Param('viewer_user_id', ParseIntPipe) viewer_user_id: number,
-    @Param('target_user_id', ParseIntPipe) target_user_id: number,
+    @Param('viewer_nontri_account') viewer_nontri_account: string,
+    @Param('target_nontri_account') target_nontri_account: string,
   ) {
     const canView = await this.leaveVisibilityService.canViewerSeeTarget(
-      viewer_user_id,
-      target_user_id,
+      viewer_nontri_account,
+      target_nontri_account,
     );
-    return { viewer_user_id, target_user_id, canView };
+    return { viewer_nontri_account, target_nontri_account, canView };
   }
 
   @Put('config')
   async saveConfig(
     @Body()
     body: {
-      viewers: number[];
-      targets: number[];
+      viewers: string[];
+      targets: string[];
     },
   ) {
     await this.leaveVisibilityService.saveConfig(body.viewers, body.targets);

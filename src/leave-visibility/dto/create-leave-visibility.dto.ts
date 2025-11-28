@@ -4,17 +4,17 @@ export class CreateLeaveVisibilityDto {
   @IsArray()
   @ArrayNotEmpty()
   @IsInt({ each: true })
-  viewer_user_ids: number[];
+  viewer_nontri_accounts: string[];
 
   @IsArray()
   @ArrayNotEmpty()
   @IsInt({ each: true })
-  target_user_ids: number[];
+  target_nontri_accounts: string[];
 
   @IsIn(['grant', 'revoke'])
   action: 'grant' | 'revoke';
 
   @IsOptional()
   @IsInt()
-  created_by_user_id?: number;
+  created_by_nontri_account?: string;
 }

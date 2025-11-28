@@ -1,5 +1,5 @@
 export interface Approver {
-  id: number;
+  nontri_account: string;
   other_prefix: string;
   prefix: string;
   fullname: string;
@@ -19,7 +19,7 @@ export interface Approver {
 export const ApproverMock = {
   list: [
     {
-      id: 1,
+      nontri_account: 'fengptu',
       other_prefix: 'ผศ.',
       prefix: 'นางสาว',
       fullname: 'วรัญญา อรรถเสนา',
@@ -38,7 +38,7 @@ export const ApproverMock = {
       ],
     },
     {
-      id: 2,
+      nontri_account: 'anumat',
       other_prefix: 'อ.ร้อยโท',
       prefix: 'นาย',
       fullname: 'อนุมัติ อิงคนินันท์',
@@ -57,7 +57,7 @@ export const ApproverMock = {
       ],
     },
     {
-      id: 4,
+      nontri_account: 'fengscd',
       other_prefix: 'รศ.',
       prefix: 'นาย',
       fullname: 'สมชาย ดอนเจดีย์',
@@ -86,7 +86,7 @@ export const ApproverMock = {
       ],
     },
     {
-      id: 5,
+      nontri_account: 'fengpny',
       other_prefix: '',
       prefix: 'นางสาว',
       fullname: 'เพชรน้อย ยอดอยู่ดี',

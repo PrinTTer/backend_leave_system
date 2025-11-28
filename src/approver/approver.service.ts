@@ -11,11 +11,11 @@ export class ApproverService {
 
     const approvers: ApproverDto[] = roles
       .map((roleItem) => {
-        const user = users.find((u) => u.id === roleItem.user_id);
+        const user = users.find((u) => u.nontri_account === roleItem.nontri_account);
         if (!user) return null;
         const levels = roleItem.role.filter((r) => r.visibility === 'show').map((r) => r.priority);
         const dto = new ApproverDto();
-        dto.id = user.id;
+        dto.nontri_account = user.nontri_account;
         dto.academic_position = user.other_prefix || null;
         dto.pronoun = user.prefix || null;
         dto.thai_name = user.fullname;

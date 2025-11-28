@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Patch, Param, Get, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Post, Body, Patch, Param, Get, Query } from '@nestjs/common';
 import { FactFormService } from './fact-form.service';
 import { CreateFactFormDto } from './dto/create-fact-form.dto';
 import { UpdateFactFormDto } from './dto/update-fact-form.dto';
@@ -19,18 +19,18 @@ export class FactFormController {
   }
   @Get('calendar')
   async getLeavesForCalendar(
-    @Query('viewer_user_id', ParseIntPipe) viewer_user_id: number,
+    @Query('viewer_nontri_account') viewer_nontri_account: string,
     @Query('start') start: string,
     @Query('end') end: string,
   ) {
-    return this.service.getLeavesForCalendar(viewer_user_id, start, end);
+    return this.service.getLeavesForCalendar(viewer_nontri_account, start, end);
   }
-  @Patch(':user_id/:fact_form_id')
+  @Patch(':nontri_account/:fact_form_id')
   update(
-    @Param('user_id') user_id: string,
+    @Param('nontri_account') nontri_account: string,
     @Param('fact_form_id') fact_form_id: string,
     @Body() updateDto: UpdateFactFormDto,
   ) {
-    return this.service.updateFactForm(Number(user_id), Number(fact_form_id), updateDto);
+    return this.service.updateFactForm(nontri_account, Number(fact_form_id), updateDto);
   }
 }

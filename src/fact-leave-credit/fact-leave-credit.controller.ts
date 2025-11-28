@@ -22,23 +22,29 @@ export class FactLeaveCreditController {
     return this.service.findAll();
   }
 
-  @Get(':user_id')
-  findByUserId(@Param('user_id') user_id: string) {
-    return this.service.findByUserId(Number(user_id));
+  @Get(':nontri_account')
+  findByUserId(@Param('nontri_account') nontri_account: string) {
+    return this.service.findByUserId(nontri_account);
   }
 
-  @Get(':user_id/:leave_type_id')
-  findOne(@Param('user_id') user_id: string, @Param('leave_type_id') leave_type_id: string) {
-    return this.service.findOne(Number(user_id), Number(leave_type_id));
+  @Get(':nontri_account/:leave_type_id')
+  findOne(
+    @Param('nontri_account') nontri_account: string,
+    @Param('leave_type_id') leave_type_id: string,
+  ) {
+    return this.service.findOne(nontri_account, Number(leave_type_id));
   }
 
-  @Patch(':user_id/')
-  update(@Param('user_id') user_id: string, @Body() dto: UpdateFactLeaveCreditDto[]) {
-    return this.service.update(Number(user_id), dto);
+  @Patch(':nontri_account')
+  update(@Param('nontri_account') nontri_account: string, @Body() dto: UpdateFactLeaveCreditDto[]) {
+    return this.service.update(nontri_account, dto);
   }
 
-  @Delete(':user_id/:leave_type_id')
-  remove(@Param('user_id') user_id: string, @Param('leave_type_id') leave_type_id: string) {
-    return this.service.remove(Number(user_id), Number(leave_type_id));
+  @Delete(':nontri_account/:leave_type_id')
+  remove(
+    @Param('nontri_account') nontri_account: string,
+    @Param('leave_type_id') leave_type_id: string,
+  ) {
+    return this.service.remove(nontri_account, Number(leave_type_id));
   }
 }

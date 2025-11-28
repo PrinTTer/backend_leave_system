@@ -1,7 +1,7 @@
 import { IsNumber, IsString, IsOptional } from 'class-validator';
 
 export interface Assistants {
-  user_id: number;
+  nontri_account: string;
 }
 
 export interface ExtendLeaves {
@@ -41,8 +41,8 @@ export enum Status {
 }
 
 export class CreateFactFormDto {
-  @IsNumber()
-  user_id: number;
+  @IsString()
+  nontri_account: string;
 
   @IsNumber()
   leave_type_id: number;

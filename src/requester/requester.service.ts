@@ -11,8 +11,8 @@ export class RequesterService {
   async createAndUpdateRequester(dto: CreateRequesterDto[]) {
     return await this.prisma.requester.createMany({
       data: dto.map((dto) => ({
-        user_id: dto.user_id,
-        approver_id: dto.approver_id,
+        nontri_account: dto.nontri_account,
+        approver_nontri_account: dto.approver_nontri_account,
         approver_order: dto.approver_order,
       })),
       skipDuplicates: true,
@@ -23,8 +23,8 @@ export class RequesterService {
     const deletePromises = dtos.map((dto) =>
       this.prisma.requester.deleteMany({
         where: {
-          user_id: dto.user_id,
-          approver_id: dto.approver_id,
+          nontri_account: dto.nontri_account,
+          approver_nontri_account: dto.approver_nontri_account,
           approver_order: dto.approver_order,
         },
       }),
@@ -34,14 +34,14 @@ export class RequesterService {
   }
 
   private mapApproversByOrder(requesters: CreateRequesterDto[]) {
-    const grouped: Record<number, Requester> = {};
+    const grouped: Record<string, Requester> = {};
 
     requesters.forEach((r) => {
-      const userId = r.user_id;
+      const userId = r.nontri_account;
       if (!grouped[userId]) {
         grouped[userId] = {
-          user_id: userId,
-          user: UserMock.list.find((u) => u.id === userId) || null,
+          nontri_account: userId,
+          user: UserMock.list.find((u) => u.nontri_account === userId) || null,
           approver_order1: [],
           approver_order2: [],
           approver_order3: [],
@@ -55,7 +55,8 @@ export class RequesterService {
         | 'approver_order3'
         | 'approver_order4';
 
-      const approver = ApproverMock.list.find((a) => a.id === r.approver_id) || null;
+      const approver =
+        ApproverMock.list.find((a) => a.nontri_account === r.approver_nontri_account) || null;
       if (approver) {
         grouped[userId][orderKey].push(approver);
       }
@@ -64,17 +65,17 @@ export class RequesterService {
     return Object.values(grouped);
   }
 
-  async getRequesterByUserId(userId: number) {
+  async getRequesterByUserId(nontri_account: string) {
     const req = await this.prisma.requester.findMany({
-      where: { user_id: userId },
+      where: { nontri_account: nontri_account },
     });
 
     return this.mapApproversByOrder(req);
   }
 
-  async getRequesterByApproverId(approverId: number) {
+  async getRequesterByApproverId(approver_nontri_account: string) {
     const req = await this.prisma.requester.findMany({
-      where: { approver_id: approverId },
+      where: { approver_nontri_account: approver_nontri_account },
     });
     return this.mapApproversByOrder(req);
   }

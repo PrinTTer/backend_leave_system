@@ -1,5 +1,5 @@
 export class ApproverDto {
-  id: number;
+  nontri_account: string;
   academic_position?: string | null;
   pronoun?: string | null;
   thai_name: string;

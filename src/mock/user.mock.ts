@@ -1,6 +1,6 @@
 export interface User {
-  id: number;
-  other_prefix: string;
+  nontri_account: string;
+  other_prefix: string | null;
   prefix: string;
   fullname: string;
   gender: string;
@@ -13,7 +13,7 @@ export interface User {
 export const UserMock = {
   list: [
     {
-      id: 1,
+      nontri_account: 'fengptu',
       other_prefix: 'ผศ.',
       prefix: 'นางสาว',
       fullname: 'วรัญญา อรรถเสนา',
@@ -24,7 +24,7 @@ export const UserMock = {
       employment_start_date: '2014-01-15',
     },
     {
-      id: 2,
+      nontri_account: 'anumat',
       other_prefix: 'อ.ร้อยโท',
       prefix: 'นาย',
       fullname: 'อนุมัติ อิงคนินันท์',
@@ -35,7 +35,7 @@ export const UserMock = {
       employment_start_date: '2014-03-01',
     },
     {
-      id: 3,
+      nontri_account: 'theerawat',
       other_prefix: 'อ.',
       prefix: 'นาย',
       fullname: 'ธีรวัฒน์ หวายฤทธิ์',
@@ -46,7 +46,7 @@ export const UserMock = {
       employment_start_date: '2024-03-01',
     },
     {
-      id: 4,
+      nontri_account: 'fengscd',
       other_prefix: 'รศ.',
       prefix: 'นาย',
       fullname: 'สมชาย ดอนเจดีย์',
@@ -57,8 +57,8 @@ export const UserMock = {
       employment_start_date: '2010-03-01',
     },
     {
-      id: 5,
-      other_prefix: '',
+      nontri_account: 'fengpny',
+      other_prefix: null,
       prefix: 'นางสาว',
       fullname: 'เพชรน้อย ยอดอยู่ดี',
       gender: 'female',
@@ -68,8 +68,8 @@ export const UserMock = {
       employment_start_date: '2010-03-01',
     },
     {
-      id: 6,
-      other_prefix: '',
+      nontri_account: 'fengjts',
+      other_prefix: null,
       prefix: 'นางสาว',
       fullname: 'จุฑาทิพย์ ทรัพย์ฤทธา',
       gender: 'female',

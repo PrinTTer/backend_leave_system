@@ -12,6 +12,7 @@ import { RequesterModule } from './requester/requester.module';
 import { ApprovalModule } from './approval/approval.module';
 import { LeaveVisibilityModule } from './leave-visibility/leave-visibility.module';
 import { ApproverModule } from './approver/approver.module';
+import { LeaveVisibilityService } from './leave-visibility/leave-visibility.service';
 
 @Module({
   imports: [

@@ -6,7 +6,7 @@ import { UserMock } from 'src/mock/user.mock';
 
 export interface FactLeaveCreditResult {
   leave_credit_id?: number;
-  user_id: number;
+  nontri_account: string;
   leave_type_id: number;
   used_leave: number;
   annual_leave: number;
@@ -45,7 +45,7 @@ export class FactLeaveCreditService {
   }
 
   async createAllLeaveCreditForOneUser(dto: CreateFactLeaveCreditDto) {
-    const user = UserMock.list.find((u) => u.id === dto.user_id);
+    const user = UserMock.list.find((u) => u.nontri_account === dto.nontri_account);
     if (!user) throw new Error('User not found');
 
     // 1) หาเพศจาก prefix
@@ -73,7 +73,7 @@ export class FactLeaveCreditService {
       // ❗ เช็คว่ามีอยู่ใน fact_leave_credit แล้วไหม
       const exist = await this.prisma.fact_leave_credit.findFirst({
         where: {
-          user_id: dto.user_id,
+          nontri_account: dto.nontri_account,
           leave_type_id: lt.leave_type_id,
         },
       });
@@ -86,7 +86,7 @@ export class FactLeaveCreditService {
       // 6) สร้างใหม่
       const record = await this.prisma.fact_leave_credit.create({
         data: {
-          user_id: dto.user_id,
+          nontri_account: dto.nontri_account,
           leave_type_id: lt.leave_type_id,
           used_leave: 0,
           annual_leave: lt.category === 'vacation' ? annual : 0,
@@ -104,26 +104,28 @@ export class FactLeaveCreditService {
     // 1) ดึง leave type ทั้งหมดมาก่อน
     const leaveTypes = await this.prisma.leave_type.findMany();
 
-    // 2) user_ids ทั้งหมดจาก mock
+    // 2) nontri_account ทั้งหมดจาก mock
     const users = UserMock.list;
-    const userIds = users.map((u) => u.id);
+    const userIds = users.map((u) => u.nontri_account);
 
     // 3) ดึง fact_leave_credit ที่มีอยู่แล้วทั้งหมดของ user พวกนี้
     const existingCredits = await this.prisma.fact_leave_credit.findMany({
       where: {
-        user_id: { in: userIds },
+        nontri_account: { in: userIds },
       },
       select: {
-        user_id: true,
+        nontri_account: true,
         leave_type_id: true,
       },
     });
 
-    // เอาไว้เช็คเร็ว ๆ ว่าคู่ (user_id, leave_type_id) มีแล้วไหม
-    const existingSet = new Set(existingCredits.map((c) => `${c.user_id}-${c.leave_type_id}`));
+    // เอาไว้เช็คเร็ว ๆ ว่าคู่ (nontri_account, leave_type_id) มีแล้วไหม
+    const existingSet = new Set(
+      existingCredits.map((c) => `${c.nontri_account}-${c.leave_type_id}`),
+    );
 
     const payload: {
-      user_id: number;
+      nontri_account: string;
       leave_type_id: number;
       annual_leave: number;
       used_leave: number;
@@ -147,13 +149,13 @@ export class FactLeaveCreditService {
 
       // 5) วนตาม leave type ที่อนุญาตของ user คนนี้
       for (const lt of allowedTypes) {
-        const key = `${user.id}-${lt.leave_type_id}`;
+        const key = `${user.nontri_account}-${lt.leave_type_id}`;
 
         // ถ้ามีอยู่แล้วใน fact_leave_credit → ข้าม
         if (existingSet.has(key)) continue;
 
         payload.push({
-          user_id: user.id,
+          nontri_account: user.nontri_account,
           leave_type_id: lt.leave_type_id,
           annual_leave: lt.category === 'vacation' ? annual : 0,
           used_leave: 0,
@@ -171,11 +173,11 @@ export class FactLeaveCreditService {
 
     console.log('result', result);
 
-    // ดึงทั้งหมดที่เพิ่งสร้าง (ตาม user_id + leave_type_id)
+    // ดึงทั้งหมดที่เพิ่งสร้าง (ตาม nontri_account + leave_type_id)
     const created = await this.prisma.fact_leave_credit.findMany({
       where: {
         OR: payload.map((p) => ({
-          user_id: p.user_id,
+          nontri_account: p.nontri_account,
           leave_type_id: p.leave_type_id,
         })),
       },
@@ -185,10 +187,10 @@ export class FactLeaveCreditService {
     return created;
   }
 
-  async findByUserId(user_id: number) {
+  async findByUserId(nontri_account: string) {
     return await this.prisma.fact_leave_credit.findMany({
       where: {
-        user_id,
+        nontri_account,
       },
       include: {
         leave_type: true,
@@ -202,11 +204,11 @@ export class FactLeaveCreditService {
     });
   }
 
-  async findOne(user_id: number, leave_type_id: number) {
+  async findOne(nontri_account: string, leave_type_id: number) {
     return await this.prisma.fact_leave_credit.findUnique({
       where: {
-        user_id_leave_type_id: {
-          user_id,
+        nontri_account_leave_type_id: {
+          nontri_account,
           leave_type_id,
         },
       },
@@ -214,7 +216,7 @@ export class FactLeaveCreditService {
     });
   }
 
-  async update(user_id: number, dtos: UpdateFactLeaveCreditDto[]) {
+  async update(nontri_account: string, dtos: UpdateFactLeaveCreditDto[]) {
     const results: FactLeaveCreditResult[] = [];
 
     if (!dtos) {
@@ -227,8 +229,8 @@ export class FactLeaveCreditService {
       // 1) หาของเดิม
       let record = await this.prisma.fact_leave_credit.findUnique({
         where: {
-          user_id_leave_type_id: {
-            user_id,
+          nontri_account_leave_type_id: {
+            nontri_account,
             leave_type_id: leaveTypeId,
           },
         },
@@ -243,9 +245,9 @@ export class FactLeaveCreditService {
         if (!leaveType) continue;
 
         // คำนวณสิทธิลาพักร้อนถ้าจำเป็น
-        const user = UserMock.list.find((u) => u.id === user_id);
+        const user = UserMock.list.find((u) => u.nontri_account === nontri_account);
         if (!user) {
-          throw new Error(`User with id ${user_id} not found in UserMock`);
+          throw new Error(`User with id ${nontri_account} not found in UserMock`);
         }
 
         const annual = await this.calculateAnnual(user.employment_start_date);
@@ -256,7 +258,7 @@ export class FactLeaveCreditService {
         // สร้าง record ใหม่เฉพาะ leave_type นี้
         record = await this.prisma.fact_leave_credit.create({
           data: {
-            user_id,
+            nontri_account,
             leave_type_id: leaveTypeId,
             used_leave: 0,
             annual_leave: leaveType.category === 'vacation' ? annual : 0,
@@ -264,7 +266,7 @@ export class FactLeaveCreditService {
           },
         });
 
-        await this.createAllLeaveCreditForOneUser({ user_id });
+        await this.createAllLeaveCreditForOneUser({ nontri_account });
       }
 
       // 3) คำนวณค่าใหม่
@@ -279,8 +281,8 @@ export class FactLeaveCreditService {
       // 4) update record
       const updated = await this.prisma.fact_leave_credit.update({
         where: {
-          user_id_leave_type_id: {
-            user_id,
+          nontri_account_leave_type_id: {
+            nontri_account,
             leave_type_id: leaveTypeId,
           },
         },
@@ -297,20 +299,25 @@ export class FactLeaveCreditService {
     return results;
   }
 
-  async remove(user_id: number, leave_type_id: number) {
+  async remove(nontri_account: string, leave_type_id: number) {
     return await this.prisma.fact_leave_credit.delete({
       where: {
-        user_id_leave_type_id: {
-          user_id,
+        nontri_account_leave_type_id: {
+          nontri_account,
           leave_type_id,
         },
       },
     });
   }
 
-  async updateEditLeave(user_id: number, leave_type_id: number, oldDay: number, newDay: number) {
+  async updateEditLeave(
+    nontri_account: string,
+    leave_type_id: number,
+    oldDay: number,
+    newDay: number,
+  ) {
     const record = await this.prisma.fact_leave_credit.findUnique({
-      where: { user_id_leave_type_id: { user_id, leave_type_id } },
+      where: { nontri_account_leave_type_id: { nontri_account, leave_type_id } },
     });
 
     if (!record) throw new Error('can not find fact_leave_credit');
@@ -327,7 +334,7 @@ export class FactLeaveCreditService {
     }
 
     return this.prisma.fact_leave_credit.update({
-      where: { user_id_leave_type_id: { user_id, leave_type_id } },
+      where: { nontri_account_leave_type_id: { nontri_account, leave_type_id } },
       data: {
         used_leave: new_used_leave,
         left_leave: new_left_leave,
