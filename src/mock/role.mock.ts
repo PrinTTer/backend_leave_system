@@ -1,6 +1,5 @@
 export interface Role {
-  user_id: number;
-  nontri_id: number;
+  nontri_account: string;
   approve_position: string;
   role: {
     role_id: number;
@@ -13,8 +12,7 @@ export interface Role {
 export const Role = {
   list: [
     {
-      user_id: 1,
-      nontri_id: 1,
+      nontri_account: 'fengptu',
       approve_position: 'หัวหน้าภาควิชาวิศวกรรมคอมพิวเตอร์',
       role: [
         {
@@ -32,8 +30,7 @@ export const Role = {
       ],
     },
     {
-      user_id: 2,
-      nontri_id: 2,
+      nontri_account: 'anumat',
       approve_position: 'รักษาการแทนหัวหน้าภาควิชาวิศวกรรมคอมพิวเตอร์',
       role: [
         {
@@ -51,8 +48,7 @@ export const Role = {
       ],
     },
     {
-      user_id: 4,
-      nontri_id: 4,
+      nontri_account: 'fengscd',
       approve_position: 'คณบดีคณะวิศวกรรมศาสตร์',
       role: [
         {

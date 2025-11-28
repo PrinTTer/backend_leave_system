@@ -10,14 +10,16 @@ export class RequesterController {
     return this.requesterService.getAllRequester();
   }
 
-  @Get('by-user/:userId')
-  async getRequesterByUserId(@Param('userId', ParseIntPipe) userId: number) {
-    return this.requesterService.getRequesterByUserId(userId);
+  @Get('by-user/:nontri_account')
+  async getRequesterByUserId(@Param('nontri_account') nontri_account: string) {
+    return this.requesterService.getRequesterByUserId(nontri_account);
   }
 
-  @Get('by-approver/:approverId')
-  async getRequesterByApproverId(@Param('approverId', ParseIntPipe) approverId: number) {
-    return this.requesterService.getRequesterByApproverId(approverId);
+  @Get('by-approver/:approver_nontri_account')
+  async getRequesterByApproverId(
+    @Param('approver_nontri_account') approver_nontri_account: string,
+  ) {
+    return this.requesterService.getRequesterByApproverId(approver_nontri_account);
   }
 
   @Post()

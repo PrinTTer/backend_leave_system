@@ -1,13 +1,13 @@
-import { IsInt, IsNotEmpty } from 'class-validator';
+import { IsInt, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateRequesterDto {
   @IsNotEmpty()
-  @IsInt()
-  user_id: number;
+  @IsString()
+  nontri_account: string;
 
   @IsNotEmpty()
-  @IsInt()
-  approver_id: number;
+  @IsString()
+  approver_nontri_account: string;
 
   @IsNotEmpty()
   @IsInt()

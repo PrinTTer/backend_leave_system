@@ -1,9 +1,9 @@
 import { User } from './user.mock';
 export interface Requester {
-  user_id: number;
+  nontri_account: string;
   user: User | null;
   approver_order1: {
-    id: number;
+    nontri_account: string;
     other_prefix: string;
     prefix: string;
     fullname: string;
@@ -14,7 +14,7 @@ export interface Requester {
     employment_start_date: string;
   }[];
   approver_order2: {
-    id: number;
+    nontri_account: string;
     other_prefix: string;
     prefix: string;
     fullname: string;
@@ -25,7 +25,7 @@ export interface Requester {
     employment_start_date: string;
   }[];
   approver_order3: {
-    id: number;
+    nontri_account: string;
     other_prefix: string;
     prefix: string;
     fullname: string;
@@ -36,7 +36,7 @@ export interface Requester {
     employment_start_date: string;
   }[];
   approver_order4: {
-    id: number;
+    nontri_account: string;
     other_prefix: string;
     prefix: string;
     fullname: string;
@@ -51,21 +51,21 @@ export interface Requester {
 export const ApprovalMock = {
   list: [
     {
-      user_id: 1,
+      nontri_account: 'fengptu',
       user: {
-        id: 1,
-        other_prefix: 'ผศ.',
+        nontri_account: 'fengptu',
+        other_prefix: 'ผศ.ดร.',
         prefix: 'นางสาว',
         fullname: 'วรัญญา อรรถเสนา',
         gender: 'female',
-        position: 'หัวหน้าภาควิชาวิศวกรรมคอมพิวเตอร์',
-        faculty: 'คณะวิศวกรรมศาสตร์',
-        department: 'ภาควิชาวิศวกรรมคอมพิวเตอร์',
-        employment_start_date: '2014-01-15',
+        position: '',
+        faculty: 'วิศวกรรมศาสตร์',
+        department: 'วิศวกรรมคอมพิวเตอร์',
+        employment_start_date: '2025-11-09',
       },
       approver_order1: [
         {
-          id: 4,
+          nontri_account: 'fengscd',
           other_prefix: 'รศ.',
           prefix: 'นาย',
           fullname: 'สมชาย ดอนเจดีย์',
@@ -76,8 +76,8 @@ export const ApprovalMock = {
           employment_start_date: '2010-03-01',
         },
         {
-          id: 5,
-          other_prefix: '',
+          nontri_account: 'fengpny',
+          other_prefix: null,
           prefix: 'นางสาว',
           fullname: 'เพชรน้อย ยอดอยู่ดี',
           gender: 'female',
@@ -92,9 +92,9 @@ export const ApprovalMock = {
       approver_order4: [],
     },
     {
-      user_id: 2,
+      nontri_account: 'anumat',
       user: {
-        id: 2,
+        nontri_account: 'anumat',
         other_prefix: 'อ.ร้อยโท',
         prefix: 'นาย',
         fullname: 'อนุมัติ อิงคนินันท์',
@@ -106,7 +106,7 @@ export const ApprovalMock = {
       },
       approver_order1: [
         {
-          id: 1,
+          nontri_account: 'fengptu',
           other_prefix: 'ผศ.',
           prefix: 'นางสาว',
           fullname: 'วรัญญา อรรถเสนา',
@@ -119,7 +119,7 @@ export const ApprovalMock = {
       ],
       approver_order2: [
         {
-          id: 4,
+          nontri_account: 'fengscd',
           other_prefix: 'รศ.',
           prefix: 'นาย',
           fullname: 'สมชาย ดอนเจดีย์',
@@ -130,8 +130,8 @@ export const ApprovalMock = {
           employment_start_date: '2010-03-01',
         },
         {
-          id: 5,
-          other_prefix: '',
+          nontri_account: 'fengpny',
+          other_prefix: null,
           prefix: 'นางสาว',
           fullname: 'เพชรน้อย ยอดอยู่ดี',
           gender: 'female',

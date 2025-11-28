@@ -13,14 +13,15 @@ export class LeaveVisibilityService {
   }
 
   async bulkUpdate(dto: CreateLeaveVisibilityDto) {
-    const { viewer_user_ids, target_user_ids, action, created_by_user_id } = dto;
+    const { viewer_nontri_accounts, target_nontri_accounts, action, created_by_nontri_account } =
+      dto;
 
     if (action === 'grant') {
-      const data = viewer_user_ids.flatMap((viewerId) =>
-        target_user_ids.map((targetId) => ({
-          viewer_user_id: viewerId,
-          target_user_id: targetId,
-          created_by_user_id: created_by_user_id ?? null,
+      const data = viewer_nontri_accounts.flatMap((viewerId) =>
+        target_nontri_accounts.map((targetId) => ({
+          viewer_nontri_account: viewerId,
+          target_nontri_account: targetId,
+          created_by_nontri_account: created_by_nontri_account ?? null,
         })),
       );
 
@@ -38,8 +39,8 @@ export class LeaveVisibilityService {
     if (action === 'revoke') {
       const result = await this.prisma.leave_visibility.deleteMany({
         where: {
-          viewer_user_id: { in: viewer_user_ids },
-          target_user_id: { in: target_user_ids },
+          viewer_nontri_account: { in: viewer_nontri_accounts },
+          target_nontri_account: { in: target_nontri_accounts },
         },
       });
 
@@ -64,9 +65,9 @@ export class LeaveVisibilityService {
     return this.prisma.leave_visibility.update({
       where: { leave_visibility_id: id },
       data: {
-        viewer_user_id: dto.viewer_user_id,
-        target_user_id: dto.target_user_id,
-        created_by_user_id: dto.created_by_user_id ?? undefined,
+        viewer_nontri_account: dto.viewer_nontri_account,
+        target_nontri_account: dto.target_nontri_account,
+        created_by_nontri_account: dto.created_by_nontri_account ?? undefined,
       },
     });
   }
@@ -76,44 +77,44 @@ export class LeaveVisibilityService {
       where: { leave_visibility_id: id },
     });
   }
-  findTargetsForViewer(viewer_user_id: number) {
+  findTargetsForViewer(viewer_nontri_account: string) {
     return this.prisma.leave_visibility.findMany({
-      where: { viewer_user_id: viewer_user_id },
+      where: { viewer_nontri_account: viewer_nontri_account },
     });
   }
-  findViewersForTarget(target_user_id: number) {
+  findViewersForTarget(target_nontri_account: string) {
     return this.prisma.leave_visibility.findMany({
-      where: { target_user_id: target_user_id },
+      where: { target_nontri_account: target_nontri_account },
     });
   }
-  async canViewerSeeTarget(viewer_user_id: number, target_user_id: number) {
+  async canViewerSeeTarget(viewer_nontri_account: string, target_nontri_account: string) {
     const record = await this.prisma.leave_visibility.findFirst({
       where: {
-        viewer_user_id: viewer_user_id,
-        target_user_id: target_user_id,
+        viewer_nontri_account: viewer_nontri_account,
+        target_nontri_account: target_nontri_account,
       },
     });
     return !!record;
   }
 
-  async getConfig(): Promise<{ viewers: number[]; targets: number[] }> {
+  async getConfig(): Promise<{ viewers: string[]; targets: string[] }> {
     const viewerRows = await this.prisma.leave_visibility.findMany({
-      select: { viewer_user_id: true },
-      distinct: ['viewer_user_id'],
+      select: { viewer_nontri_account: true },
+      distinct: ['viewer_nontri_account'],
     });
 
     const targetRows = await this.prisma.leave_visibility.findMany({
-      select: { target_user_id: true },
-      distinct: ['target_user_id'],
+      select: { target_nontri_account: true },
+      distinct: ['target_nontri_account'],
     });
 
     return {
-      viewers: viewerRows.map((v) => v.viewer_user_id),
-      targets: targetRows.map((t) => t.target_user_id),
+      viewers: viewerRows.map((v) => v.viewer_nontri_account),
+      targets: targetRows.map((t) => t.target_nontri_account),
     };
   }
 
-  async saveConfig(viewers: number[], targets: number[]): Promise<void> {
+  async saveConfig(viewers: string[], targets: string[]): Promise<void> {
     if (!viewers.length) {
       return;
     }
@@ -122,7 +123,7 @@ export class LeaveVisibilityService {
       // 1) ลบสิทธิ์เดิมของ viewer กลุ่มนี้
       await tx.leave_visibility.deleteMany({
         where: {
-          viewer_user_id: { in: viewers },
+          viewer_nontri_account: { in: viewers },
         },
       });
 
@@ -134,8 +135,8 @@ export class LeaveVisibilityService {
       // 2) สร้างสิทธิ์ใหม่ = viewers x targets
       const data: Prisma.leave_visibilityCreateManyInput[] = viewers.flatMap((viewerId) =>
         targets.map((targetId) => ({
-          viewer_user_id: viewerId,
-          target_user_id: targetId,
+          viewer_nontri_account: viewerId,
+          target_nontri_account: targetId,
         })),
       );
 

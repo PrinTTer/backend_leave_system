@@ -1,7 +1,7 @@
-import { IsNumber, IsOptional } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class CreateFactLeaveCreditDto {
-  @IsNumber()
+  @IsString()
   @IsOptional()
-  user_id: number;
+  nontri_account: string;
 }

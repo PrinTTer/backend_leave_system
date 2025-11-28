@@ -22,7 +22,7 @@ model calendar {
 
 model fact_form {
   fact_form_id  Int              @id @default(autoincrement())
-  user_id       Int
+  nontri_account       String                @db.VarChar(45)
   leave_type_id Int
   start_date    DateTime         @db.Date
   end_date      DateTime         @db.Date
@@ -81,11 +81,11 @@ model leave_type_document {
 
 model leave_visibility {
   leave_visibility_id Int      @id @default(autoincrement())
-  viewer_user_id      Int
-  target_user_id      Int
-  created_by_user_id  Int?
+  viewer_nontri_account      String                @db.VarChar(45)
+  target_nontri_account      String                @db.VarChar(45)
+  created_by_nontri_account  String?                @db.VarChar(45)
   created_at          DateTime @default(now())
-  @@unique([viewer_user_id, target_user_id], map: "uk_viewer_target")
+  @@unique([viewer_nontri_account, target_nontri_account], map: "uk_viewer_target")
   @@map("leave_visibility")
 }
 
@@ -101,35 +101,35 @@ model vacation_rule {
 }
 
 model approval {
-  user_id      Int
-  approver_id  Int
+  nontri_account      String                @db.VarChar(45)
+  approver_nontri_account  String                @db.VarChar(45)
   fact_form_id Int
   status       approval_status
   fact_form    fact_form       @relation(fields: [fact_form_id], references: [fact_form_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_approval_fact_form1")
 
-  @@id([user_id, approver_id, fact_form_id])
-  @@unique([user_id, approver_id, fact_form_id], map: "unique_user_approver_form")
+  @@id([nontri_account, approver_nontri_account, fact_form_id])
+  @@unique([nontri_account, approver_nontri_account, fact_form_id], map: "unique_user_approver_form")
   @@index([fact_form_id], map: "fk_approval_fact_form1_idx")
 }
 
 model fact_leave_credit {
-  user_id       Int
+  nontri_account       String                @db.VarChar(45)
   leave_type_id Int
   annual_leave  Float      @db.Float
   used_leave    Float      @db.Float
   left_leave    Float      @db.Float
   leave_type    leave_type @relation(fields: [leave_type_id], references: [leave_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_fact_leave_credit_leave_type1")
 
-  @@id([user_id, leave_type_id])
+  @@id([nontri_account, leave_type_id])
   @@index([leave_type_id], map: "fk_fact_leave_credit_leave_type1_idx")
 }
 
 model requester {
-  user_id        Int
-  approver_id    Int
+  nontri_account        String                @db.VarChar(45)
+  approver_nontri_account    String                @db.VarChar(45)
   approver_order Int
 
-  @@unique([user_id, approver_id, approver_order], map: "user_id")
+  @@unique([nontri_account, approver_nontri_account, approver_order], map: "nontri_account")
 }
 
 enum calendar_calendar_type {
