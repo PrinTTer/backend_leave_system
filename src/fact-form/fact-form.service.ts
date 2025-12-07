@@ -15,7 +15,6 @@ import { UpdateFactFormDto } from './dto/update-fact-form.dto';
 import { ApprovalMock } from 'src/mock/approval.mock';
 import { UserMock } from 'src/mock/user.mock';
 import { fact_form_status } from '@prisma/client';
-import { leave_visibility } from '@prisma/client';
 
 export interface FactLeaveCreditResult {
   leave_credit_id?: number;
@@ -182,7 +181,7 @@ export class FactFormService {
           name: a.fullname,
         },
         {
-          status: Status.Pending,
+          status: dto.status || Status.Pending,
         },
       ]),
     };
@@ -213,8 +212,8 @@ export class FactFormService {
       data: {
         nontri_account: dto.nontri_account,
         leave_type_id: dto.leave_type_id,
-        start_date: new Date(dto.start_date + 'T00:00:00.000Z'),
-        end_date: new Date(dto.end_date + 'T00:00:00.000Z'),
+        start_date: new Date(dto.start_date),
+        end_date: new Date(dto.end_date),
 
         total_day: dto.total_day,
         fiscal_year: dto.fiscal_year,
@@ -226,15 +225,35 @@ export class FactFormService {
       },
     });
 
-    for (const a of approval) {
-      await this.prisma.approval.create({
-        data: {
-          approver_nontri_account: a.nontri_account,
-          nontri_account: dto.nontri_account,
-          fact_form_id: form.fact_form_id,
-          status: Status.Pending,
-        },
-      });
+    if (dto.status === Status.Pending) {
+      for (const a of approval) {
+        await this.prisma.approval.create({
+          data: {
+            approver_nontri_account: a.nontri_account,
+            nontri_account: dto.nontri_account,
+            fact_form_id: form.fact_form_id,
+            status: Status.Pending,
+          },
+        });
+      }
+    }
+
+    if (dto.attachment?.data) {
+      const base64Data = dto.attachment.data.split(';base64,').pop();
+
+      if (!base64Data) {
+        throw new Error('Invalid base64 data');
+      }
+
+      const fileName = form.file_leave.replace(/\.json$/i, '');
+
+      const dirPath = `uploads/leave_json/${dto.nontri_account}/attachment_${fileName}`;
+
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+      }
+
+      fs.writeFileSync(`${dirPath}/${dto.attachment.fileName}`, Buffer.from(base64Data, 'base64'));
     }
 
     return {

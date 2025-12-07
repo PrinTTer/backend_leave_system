@@ -27,6 +27,11 @@ export class FactLeaveCreditController {
     return this.service.findByUserId(nontri_account);
   }
 
+  @Get(':nontri_account/left')
+  findLeftByUserId(@Param('nontri_account') nontri_account: string) {
+    return this.service.findleftByUserId(nontri_account);
+  }
+
   @Get(':nontri_account/:leave_type_id')
   findOne(
     @Param('nontri_account') nontri_account: string,

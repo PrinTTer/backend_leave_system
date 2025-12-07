@@ -171,6 +171,7 @@ export class FactLeaveCreditService {
       data: payload,
     });
 
+    console.log('payload', payload);
     console.log('result', result);
 
     // ดึงทั้งหมดที่เพิ่งสร้าง (ตาม nontri_account + leave_type_id)
@@ -184,6 +185,7 @@ export class FactLeaveCreditService {
       include: { leave_type: true },
     });
 
+    console.log('created', created);
     return created;
   }
 
@@ -191,6 +193,20 @@ export class FactLeaveCreditService {
     return await this.prisma.fact_leave_credit.findMany({
       where: {
         nontri_account,
+      },
+      include: {
+        leave_type: true,
+      },
+    });
+  }
+
+  async findleftByUserId(nontri_account: string) {
+    return await this.prisma.fact_leave_credit.findMany({
+      where: {
+        nontri_account: nontri_account,
+        left_leave: {
+          not: 0, // Prisma ใช้ "not" แทน "!="
+        },
       },
       include: {
         leave_type: true,

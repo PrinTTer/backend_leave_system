@@ -40,6 +40,12 @@ export enum Status {
   Cancel = 'cancel',
 }
 
+export interface AttachmentDto {
+  fileName: string;
+  fileType: string;
+  data: string;
+}
+
 export class CreateFactFormDto {
   @IsString()
   nontri_account: string;
@@ -51,13 +57,22 @@ export class CreateFactFormDto {
   start_date: string;
 
   @IsString()
+  start_type?: string;
+
+  @IsString()
   end_date: string;
+
+  @IsString()
+  end_type?: string;
 
   @IsNumber()
   total_day: number;
 
   @IsNumber()
   fiscal_year: number;
+
+  @IsString()
+  leave_aboard?: string;
 
   @IsOptional()
   @IsString()
@@ -90,5 +105,5 @@ export class CreateFactFormDto {
   travel_details?: TravelDetails;
 
   @IsOptional()
-  attachment?: string;
+  attachment?: AttachmentDto;
 }
