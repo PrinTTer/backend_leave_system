@@ -90,7 +90,7 @@ export class FactLeaveCreditService {
           leave_type_id: lt.leave_type_id,
           used_leave: 0,
           annual_leave: lt.category === 'vacation' ? annual : 0,
-          left_leave: lt.category === 'vacation' ? annual : lt.max_leave,
+          left_leave: lt.category === 'vacation' ? annual : (lt.max_leave ?? 0),
         },
       });
 
@@ -144,6 +144,8 @@ export class FactLeaveCreditService {
         if (lt.gender !== 'all' && lt.gender !== gender) return false;
         // service_year rule
         if (serviceYear < lt.service_year) return false;
+
+        if (lt.category === 'officialduty') return false;
         return true;
       });
 
@@ -159,7 +161,7 @@ export class FactLeaveCreditService {
           leave_type_id: lt.leave_type_id,
           annual_leave: lt.category === 'vacation' ? annual : 0,
           used_leave: 0,
-          left_leave: lt.category === 'vacation' ? annual : lt.max_leave,
+          left_leave: lt.category === 'vacation' ? annual : (lt.max_leave ?? 0),
         });
 
         // เพิ่มลง set ด้วย กันสร้างซ้ำซ้อนในรันเดียวกัน
@@ -167,12 +169,9 @@ export class FactLeaveCreditService {
       }
     }
 
-    const result = await this.prisma.fact_leave_credit.createMany({
+    await this.prisma.fact_leave_credit.createMany({
       data: payload,
     });
-
-    console.log('payload', payload);
-    console.log('result', result);
 
     // ดึงทั้งหมดที่เพิ่งสร้าง (ตาม nontri_account + leave_type_id)
     const created = await this.prisma.fact_leave_credit.findMany({
@@ -184,8 +183,6 @@ export class FactLeaveCreditService {
       },
       include: { leave_type: true },
     });
-
-    console.log('created', created);
     return created;
   }
 
@@ -205,7 +202,7 @@ export class FactLeaveCreditService {
       where: {
         nontri_account: nontri_account,
         left_leave: {
-          not: 0, // Prisma ใช้ "not" แทน "!="
+          not: 0,
         },
       },
       include: {
@@ -269,7 +266,7 @@ export class FactLeaveCreditService {
         const annual = await this.calculateAnnual(user.employment_start_date);
 
         // max leave ถ้าไม่ใช่ vacation
-        const defaultLeft = leaveType.category === 'vacation' ? annual : leaveType.max_leave;
+        const defaultLeft = leaveType.category === 'vacation' ? annual : (leaveType.max_leave ?? 0);
 
         // สร้าง record ใหม่เฉพาะ leave_type นี้
         record = await this.prisma.fact_leave_credit.create({
@@ -356,5 +353,22 @@ export class FactLeaveCreditService {
         left_leave: new_left_leave,
       },
     });
+  }
+
+  async findPersonalAndVacationLeave(nontri_account: string) {
+    const officialduty = await this.prisma.leave_type.findFirst({
+      where: { category: 'officialduty' },
+    });
+
+    const fact_credit = await this.prisma.fact_leave_credit.findMany({
+      where: {
+        nontri_account,
+        OR: [{ leave_type: { category: 'vacation' } }, { leave_type: { name: 'ลากิจส่วนตัว' } }],
+        left_leave: { not: 0 },
+      },
+      include: { leave_type: true },
+    });
+
+    return { fact_credit, officialduty };
   }
 }

@@ -115,9 +115,9 @@ model approval {
 model fact_leave_credit {
   nontri_account       String                @db.VarChar(45)
   leave_type_id Int
-  annual_leave  Float      @db.Float
+  annual_leave  Float     @db.Float
   used_leave    Float      @db.Float
-  left_leave    Float      @db.Float
+  left_leave    Float     @db.Float
   leave_type    leave_type @relation(fields: [leave_type_id], references: [leave_type_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_fact_leave_credit_leave_type1")
 
   @@id([nontri_account, leave_type_id])
@@ -154,6 +154,7 @@ enum leave_type_document_file_type {
 enum leave_type_category {
   general
   vacation
+  officialduty
 }
 
 enum fact_form_status {

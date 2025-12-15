@@ -13,6 +13,11 @@ export class CalendarController {
     return this.calendarService.findAll();
   }
 
+  @Get('/:year/holidays')
+  findHolidays(@Param('year', ParseIntPipe) year: number) {
+    return this.calendarService.findHolidayYears(year);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.calendarService.findOne(id);
