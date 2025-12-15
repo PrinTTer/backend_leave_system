@@ -152,4 +152,20 @@ export class CalendarService {
     });
     return { success: true };
   }
+
+  async findHolidayYears(year: number) {
+    const startOfYear = new Date();
+    const endOfYear = new Date(`${year}-12-31T23:59:59.999Z`);
+
+    const holidays = await this.prisma.calendar.findMany({
+      where: {
+        calendar_type: 'holiday',
+        start_date: { gte: startOfYear },
+        end_date: { lte: endOfYear },
+      },
+      orderBy: { start_date: 'asc' },
+    });
+
+    return holidays;
+  }
 }

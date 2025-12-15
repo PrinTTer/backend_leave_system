@@ -3,6 +3,7 @@ import { FactFormService } from './fact-form.service';
 import { CreateFactFormDto } from './dto/create-fact-form.dto';
 import { UpdateFactFormDto } from './dto/update-fact-form.dto';
 import { Request } from 'express';
+import { CreateOfficialDutyFactFormDto } from './dto/create-officialduty-fact-form.dto';
 
 @Controller('fact-form')
 export class FactFormController {
@@ -11,6 +12,11 @@ export class FactFormController {
   @Post()
   create(@Body() dto: CreateFactFormDto) {
     return this.service.createLeave(dto);
+  }
+
+  @Post('officialduty')
+  createOfficialdutyLeave(@Body() dto: CreateOfficialDutyFactFormDto) {
+    return this.service.createOfficialdutyLeave(dto);
   }
 
   @Get(':fact_form_id')

@@ -1,13 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/core/prisma/prisma.service';
-import {
-  Assistants,
-  CreateFactFormDto,
-  Expenses,
-  ExtendLeaves,
-  Status,
-  TravelDetails,
-} from './dto/create-fact-form.dto';
+import { CreateFactFormDto, Status } from './dto/create-fact-form.dto';
 import { FactLeaveCreditService } from 'src/fact-leave-credit/fact-leave-credit.service';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -15,6 +8,14 @@ import { UpdateFactFormDto } from './dto/update-fact-form.dto';
 import { ApprovalMock } from 'src/mock/approval.mock';
 import { UserMock } from 'src/mock/user.mock';
 import { fact_form_status } from '@prisma/client';
+import {
+  Assistants,
+  ExtendLeaves,
+  Expenses,
+  TravelDetails,
+  CreateOfficialDutyFactFormDto,
+} from './dto/create-officialduty-fact-form.dto';
+import { LeaveCategory } from 'src/leave-type/dto/create-leave-type.dto';
 
 export interface FactLeaveCreditResult {
   leave_credit_id?: number;
@@ -41,7 +42,7 @@ export interface LeaveType {
 
 export interface FactFormJson {
   nontri_account: number;
-  leave_type_id: number;
+  leave_type_id?: number;
 
   start_date: string;
   end_date: string;
@@ -170,6 +171,123 @@ export class FactFormService {
     if (approval.length === 0) {
       throw new Error(`No approvers found for nontri_account=${dto.nontri_account}`);
     }
+
+    const leaveForm = {
+      ...dto,
+      leaveType,
+      approvers: approval.map((a) => [
+        {
+          id: a.nontri_account,
+          name: a.fullname,
+        },
+        {
+          status: dto.status || Status.Pending,
+        },
+      ]),
+    };
+
+    // 2) สรุปจำนวนวันลาตามประเภท
+    const creditPayload = [
+      {
+        leave_type_id: dto.leave_type_id,
+        used_leave: dto.total_day,
+      },
+    ];
+
+    // 2) อัปเดต fact_leave_credit
+    await this.factLeaveCreditService.update(dto.nontri_account, creditPayload);
+
+    const jsonPath = this.saveJsonToFile(dto.nontri_account, dto.leave_type_id, leaveForm);
+
+    const form = await this.prisma.fact_form.create({
+      data: {
+        nontri_account: dto.nontri_account,
+        leave_type_id: dto.leave_type_id,
+        start_date: new Date(dto.start_date),
+        end_date: new Date(dto.end_date),
+
+        total_day: dto.total_day,
+        fiscal_year: dto.fiscal_year,
+        status: dto.status || Status.Pending,
+        approve_date: new Date(),
+        note: dto.note,
+        file_leave: jsonPath,
+        update_at: new Date(),
+      },
+    });
+
+    if (dto.status === Status.Pending) {
+      for (const a of approval) {
+        await this.prisma.approval.create({
+          data: {
+            approver_nontri_account: a.nontri_account,
+            nontri_account: dto.nontri_account,
+            fact_form_id: form.fact_form_id,
+            status: Status.Pending,
+          },
+        });
+      }
+    }
+
+    if (dto.attachment?.data) {
+      const base64Data = dto.attachment.data.split(';base64,').pop();
+
+      if (!base64Data) {
+        throw new Error('Invalid base64 data');
+      }
+
+      const fileName = form.file_leave.replace(/\.json$/i, '');
+
+      const dirPath = `uploads/leave_json/${dto.nontri_account}/attachment_${fileName}`;
+
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+      }
+
+      fs.writeFileSync(`${dirPath}/${dto.attachment.fileName}`, Buffer.from(base64Data, 'base64'));
+    }
+
+    return {
+      ...leaveForm,
+      form,
+    };
+  }
+  async createOfficialdutyLeave(dto: CreateOfficialDutyFactFormDto) {
+    const leaveType = await this.prisma.leave_type.findFirst({
+      where: {
+        category: LeaveCategory.OFFICIALDUTY,
+      },
+    });
+
+    const rule = await this.prisma.leave_approval_rule.findFirst({
+      where: {
+        leave_type_id: leaveType?.leave_type_id || 6,
+      },
+      orderBy: { leave_less_than: 'asc' },
+    });
+
+    if (!rule) return [];
+    const maxLevel = rule.approval_level;
+
+    const config = ApprovalMock.list.find((a) => a.nontri_account === dto.nontri_account);
+
+    if (!config) {
+      throw new Error(`No approver config found for nontri_account=${dto.nontri_account}`);
+    }
+
+    // 3) รวม approver ทุก level ที่ต้องใช้
+    const approval: Approval[] = [];
+
+    for (let lvl = 1; lvl <= maxLevel; lvl++) {
+      const key = `approver_order${lvl}` as keyof ApprovalConfig;
+      const approverList = config[key] as Approval[];
+      approval.push(...approverList);
+    }
+
+    if (approval.length === 0) {
+      throw new Error(`No approvers found for nontri_account=${dto.nontri_account}`);
+    }
+
     console.log('approval', approval);
 
     const leaveForm = {
@@ -189,7 +307,7 @@ export class FactFormService {
     // 2) สรุปจำนวนวันลาตามประเภท
     let creditPayload = [
       {
-        leave_type_id: dto.leave_type_id,
+        leave_type_id: leaveType?.leave_type_id || 6,
         used_leave: dto.total_day,
       },
     ];
@@ -203,15 +321,19 @@ export class FactFormService {
       );
     }
 
-    // 3) อัปเดต fact_leave_credit
+    // 2) อัปเดต fact_leave_credit
     await this.factLeaveCreditService.update(dto.nontri_account, creditPayload);
 
-    const jsonPath = this.saveJsonToFile(dto.nontri_account, dto.leave_type_id, leaveForm);
+    const jsonPath = this.saveJsonToFile(
+      dto.nontri_account,
+      leaveType?.leave_type_id || 6,
+      leaveForm,
+    );
 
     const form = await this.prisma.fact_form.create({
       data: {
         nontri_account: dto.nontri_account,
-        leave_type_id: dto.leave_type_id,
+        leave_type_id: leaveType?.leave_type_id || 6,
         start_date: new Date(dto.start_date),
         end_date: new Date(dto.end_date),
 
@@ -312,24 +434,24 @@ export class FactFormService {
       newJson.total_day,
     );
 
-    if (data.extend_leaves && data.extend_leaves.length > 0) {
-      const oldExtend = oldJson.extend_leaves ?? [];
+    // if (data.extend_leaves && data.extend_leaves.length > 0) {
+    //   const oldExtend = oldJson.extend_leaves ?? [];
 
-      for (let i = 0; i < data.extend_leaves.length; i++) {
-        const newItem = data.extend_leaves[i];
+    //   for (let i = 0; i < data.extend_leaves.length; i++) {
+    //     const newItem = data.extend_leaves[i];
 
-        const newDay = newItem.total_days;
+    //     const newDay = newItem.total_days;
 
-        const oldDay = oldExtend[i]?.total_days ?? 0;
+    //     const oldDay = oldExtend[i]?.total_days ?? 0;
 
-        await this.factLeaveCreditService.updateEditLeave(
-          nontri_account,
-          newItem.leave_type_id,
-          oldDay,
-          newDay,
-        );
-      }
-    }
+    //     await this.factLeaveCreditService.updateEditLeave(
+    //       nontri_account,
+    //       newItem.leave_type_id,
+    //       oldDay,
+    //       newDay,
+    //     );
+    //   }
+    // }
 
     const updateLeaveForm = await this.prisma.fact_form.update({
       where: { fact_form_id },
