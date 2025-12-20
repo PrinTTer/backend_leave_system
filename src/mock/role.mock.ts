@@ -65,5 +65,23 @@ export const Role = {
         },
       ],
     },
+    {
+      nontri_account: 'fengjts',
+      approve_position: 'รักษาการแทนคณบดีคณะวิศวกรรมศาสตร์',
+      role: [
+        {
+          role_id: 1,
+          thai_name: 'ผู้อนุมัติลำดับที่ 1',
+          priority: 1,
+          visibility: 'show',
+        },
+        {
+          role_id: 2,
+          thai_name: 'ผู้อนุมัติลำดับที่ 2',
+          priority: 2,
+          visibility: 'show',
+        },
+      ],
+    },
   ],
 };
