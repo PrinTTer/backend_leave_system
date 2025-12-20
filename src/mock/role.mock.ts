@@ -27,6 +27,12 @@ export const Role = {
           priority: 2,
           visibility: 'show',
         },
+        {
+          role_id: 3,
+          thai_name: 'ผู้ลา',
+          priority: 1,
+          visibility: 'show',
+        },
       ],
     },
     {
@@ -78,6 +84,12 @@ export const Role = {
         {
           role_id: 2,
           thai_name: 'ผู้อนุมัติลำดับที่ 2',
+          priority: 2,
+          visibility: 'show',
+        },
+        {
+          role_id: 4,
+          thai_name: 'ผู้ดูแลระบบ',
           priority: 2,
           visibility: 'show',
         },

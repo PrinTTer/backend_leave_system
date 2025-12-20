@@ -13,7 +13,10 @@ export class ApproverService {
       .map((roleItem) => {
         const user = users.find((u) => u.nontri_account === roleItem.nontri_account);
         if (!user) return null;
-        const levels = roleItem.role.filter((r) => r.visibility === 'show').map((r) => r.priority);
+        const levels = roleItem.role
+          .filter((r) => r.visibility === 'show' && r.thai_name.startsWith('ผู้อนุมัติ'))
+          .map((r) => r.priority);
+        if (levels.length === 0) return null;
         const dto = new ApproverDto();
         dto.nontri_account = user.nontri_account;
         dto.academic_position = user.other_prefix || null;

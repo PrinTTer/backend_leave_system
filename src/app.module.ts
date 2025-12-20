@@ -13,6 +13,7 @@ import { ApprovalModule } from './approval/approval.module';
 import { LeaveVisibilityModule } from './leave-visibility/leave-visibility.module';
 import { ApproverModule } from './approver/approver.module';
 import { LeaveVisibilityService } from './leave-visibility/leave-visibility.service';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { LeaveVisibilityService } from './leave-visibility/leave-visibility.serv
     ApprovalModule,
     LeaveVisibilityModule,
     ApproverModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService, LeaveVisibilityService],
