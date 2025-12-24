@@ -36,6 +36,10 @@ export class FactLeaveCreditController {
   findPersonalAndVacationLeave(@Param('nontri_account') nontri_account: string) {
     return this.service.findPersonalAndVacationLeave(nontri_account);
   }
+  @Get('/all-leave/:nontri_account')
+  findAllByUserId(@Param('nontri_account') nontri_account: string) {
+    return this.service.findLeaveByUserIdWithOfficialduty(nontri_account);
+  }
 
   @Get(':nontri_account/:leave_type_id')
   findOne(
