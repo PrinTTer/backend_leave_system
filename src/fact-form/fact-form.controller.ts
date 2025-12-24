@@ -36,7 +36,7 @@ export class FactFormController {
   update(
     @Param('nontri_account') nontri_account: string,
     @Param('fact_form_id') fact_form_id: string,
-    @Body() updateDto: UpdateFactFormDto,
+    @Body() updateDto: UpdateFactFormDto | CreateOfficialDutyFactFormDto,
   ) {
     return this.service.updateFactForm(nontri_account, Number(fact_form_id), updateDto);
   }
@@ -44,5 +44,10 @@ export class FactFormController {
   @Get('history/:nontri_account')
   getAllFactform(@Param('nontri_account') nontri_account: string, @Query() dto: SearchFactformDto) {
     return this.service.searchFactformFromJson(nontri_account, dto);
+  }
+
+  @Get('cancel/:fact_form_id')
+  cancelLeaveForm(@Param('fact_form_id') fact_form_id: string) {
+    return this.service.cancelLeaveForm(Number(fact_form_id));
   }
 }
