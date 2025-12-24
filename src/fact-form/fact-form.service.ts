@@ -17,6 +17,7 @@ import {
 } from './dto/create-officialduty-fact-form.dto';
 import { LeaveCategory } from 'src/leave-type/dto/create-leave-type.dto';
 import { SearchFactformDto } from './dto/search-fact-form.dto';
+import { updateOfficialdutyFactForm } from './dto/update-officialduty-fact-form.dto';
 
 export interface FactLeaveCreditResult {
   leave_credit_id?: number;
@@ -39,6 +40,19 @@ export interface LeaveType {
   update_at: Date; // timestamp
   create_at: Date; // timestamp
   max_leave: number; // int
+}
+
+export interface AttachmentPayload {
+  fileName: string;
+  fileType: string;
+  data: string;
+}
+
+export interface AttachmentStored {
+  fileName: string;
+  fileType: string;
+  storedFileName: string;
+  relativePath: string;
 }
 
 export interface FactFormJson {
@@ -68,7 +82,8 @@ export interface FactFormJson {
 
   travel_details?: TravelDetails;
 
-  attachment?: string;
+  attachment?: AttachmentStored;
+  leave_aboard?: string;
 
   leave_type: LeaveType;
   approvers: Array<
@@ -191,9 +206,8 @@ export class FactFormService {
       throw new Error(`No approvers found for nontri_account=${dto.nontri_account}`);
     }
 
-    console.log('approval', approval);
-
     const leaveForm = {
+      ...dto,
       leave_type: leaveType,
       approvers: approval.map((a) => [
         {
@@ -214,7 +228,9 @@ export class FactFormService {
     ];
 
     // 2) อัปเดต fact_leave_credit
-    await this.factLeaveCreditService.update(dto.nontri_account, creditPayload);
+    if (dto.status === Status.Approve) {
+      await this.factLeaveCreditService.update(dto.nontri_account, creditPayload);
+    }
 
     const jsonPath = this.saveJsonToFile(dto.nontri_account, dto.leave_type_id, leaveForm);
 
@@ -255,29 +271,30 @@ export class FactFormService {
       }
     }
 
+    let storedAttachment: AttachmentStored | undefined;
+
     if (dto.attachment?.data) {
-      const base64Data = dto.attachment.data.split(';base64,').pop();
-
-      if (!base64Data) {
-        throw new Error('Invalid base64 data');
-      }
-
-      const fileName = form.file_leave.replace(/\.json$/i, '');
-
-      const dirPath = `uploads/leave_json/${dto.nontri_account}/attachment_${fileName}`;
-
-      if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true });
-      }
-
-      fs.writeFileSync(`${dirPath}/${dto.attachment.fileName}`, Buffer.from(base64Data, 'base64'));
+      storedAttachment = this.saveAttachmentAndReplaceOld(
+        dto.nontri_account,
+        form.file_leave,
+        dto.attachment,
+      );
     }
+
+    const newdata = {
+      ...leaveForm,
+      ...form,
+      attachment: storedAttachment,
+    };
+
+    this.updateJsonFile(dto.nontri_account, jsonPath, newdata);
 
     return {
       ...leaveForm,
       form,
     };
   }
+
   async createOfficialdutyLeave(dto: CreateOfficialDutyFactFormDto) {
     const leaveType = await this.prisma.leave_type.findFirst({
       where: {
@@ -315,11 +332,11 @@ export class FactFormService {
     }
 
     const leaveForm = {
-      leaveType,
+      ...dto,
+      leave_type: leaveType,
       approvers: approval.map((a) => [
         {
-          nontri_account: a.nontri_account,
-          name: a.fullname,
+          ...a,
         },
         {
           status: dto.status || Status.Pending,
@@ -345,7 +362,9 @@ export class FactFormService {
     }
 
     // 2) อัปเดต fact_leave_credit
-    await this.factLeaveCreditService.update(dto.nontri_account, creditPayload);
+    if (dto.status === Status.Approve) {
+      await this.factLeaveCreditService.update(dto.nontri_account, creditPayload);
+    }
 
     const jsonPath = this.saveJsonToFile(
       dto.nontri_account,
@@ -377,18 +396,18 @@ export class FactFormService {
 
     this.updateJsonFile(dto.nontri_account, jsonPath, newData);
 
-    if (dto.status === Status.Pending) {
-      for (const a of approval) {
-        await this.prisma.approval.create({
-          data: {
-            approver_nontri_account: a.nontri_account,
-            nontri_account: dto.nontri_account,
-            fact_form_id: form.fact_form_id,
-            status: Status.Pending,
-          },
-        });
-      }
-    }
+    // if (dto.status === Status.Pending) {
+    //   for (const a of approval) {
+    //     await this.prisma.approval.create({
+    //       data: {
+    //         approver_nontri_account: a.nontri_account,
+    //         nontri_account: dto.nontri_account,
+    //         fact_form_id: form.fact_form_id,
+    //         status: Status.Pending,
+    //       },
+    //     });
+    //   }
+    // }
 
     if (dto.attachment?.data) {
       const base64Data = dto.attachment.data.split(';base64,').pop();
@@ -446,7 +465,11 @@ export class FactFormService {
     return true;
   }
 
-  async updateFactForm(nontri_account: string, fact_form_id: number, data: UpdateFactFormDto) {
+  async updateOfficialdutyLeaveFactForm(
+    nontri_account: string,
+    fact_form_id: number,
+    data: updateOfficialdutyFactForm,
+  ) {
     const factForm = await this.prisma.fact_form.findUnique({
       where: { fact_form_id },
     });
@@ -454,42 +477,47 @@ export class FactFormService {
     if (!factForm) throw new Error(`Fact form id: ${fact_form_id} not found!`);
 
     const oldJson = this.readJsonFile(nontri_account, factForm.file_leave);
-    const newJson = { ...oldJson, ...data };
+
+    let storedAttachment = oldJson.attachment;
+
+    if (data.attachment?.data) {
+      storedAttachment = this.saveAttachmentAndReplaceOld(
+        nontri_account,
+        factForm.file_leave,
+        data.attachment,
+      );
+    }
+
+    const newJson = {
+      ...oldJson,
+      ...data,
+      attachment: storedAttachment,
+    };
+
     this.updateJsonFile(nontri_account, factForm.file_leave, newJson);
 
-    await this.factLeaveCreditService.updateEditLeave(
-      nontri_account,
-      data.leave_type_id,
-      oldJson.total_day,
-      newJson.total_day,
-    );
-
-    // if (data.extend_leaves && data.extend_leaves.length > 0) {
-    //   const oldExtend = oldJson.extend_leaves ?? [];
-
-    //   for (let i = 0; i < data.extend_leaves.length; i++) {
-    //     const newItem = data.extend_leaves[i];
-
-    //     const newDay = newItem.total_days;
-
-    //     const oldDay = oldExtend[i]?.total_days ?? 0;
-
-    //     await this.factLeaveCreditService.updateEditLeave(
-    //       nontri_account,
-    //       newItem.leave_type_id,
-    //       oldDay,
-    //       newDay,
-    //     );
-    //   }
+    // if (data.status === Status.Approve) {
+    //   await this.factLeaveCreditService.updateEditLeave(
+    //     nontri_account,
+    //     data.leave_type_id,
+    //     oldJson.total_day,
+    //     newJson.total_day,
+    //   );
     // }
+
+    const startDate = new Date(data.start_date);
+    startDate.setUTCHours(0, 0, 0, 0);
+
+    const endDate = new Date(data.end_date);
+    endDate.setUTCHours(0, 0, 0, 0);
 
     const updateLeaveForm = await this.prisma.fact_form.update({
       where: { fact_form_id },
       data: {
         nontri_account: data.nontri_account,
-        leave_type_id: data.leave_type_id,
-        start_date: new Date(data.start_date + 'T00:00:00.000Z'),
-        end_date: new Date(data.end_date + 'T00:00:00.000Z'),
+        leave_type_id: factForm.leave_type_id,
+        start_date: startDate,
+        end_date: endDate,
         total_day: data.total_day,
         fiscal_year: data.fiscal_year,
         status: data.status || Status.Pending,
@@ -501,10 +529,93 @@ export class FactFormService {
     });
 
     const file = this.readJsonFile(nontri_account, factForm.file_leave);
+    const attachmentBase64 = this.readAttachmentAsBase64(file.attachment);
 
     return {
       updateLeaveForm,
-      file,
+      file: {
+        ...file,
+        attachment: attachmentBase64
+          ? { ...file.attachment, data: attachmentBase64 }
+          : file.attachment,
+      },
+    };
+  }
+
+  async updateFactForm(
+    nontri_account: string,
+    fact_form_id: number,
+    data: UpdateFactFormDto | updateOfficialdutyFactForm,
+  ) {
+    const factForm = await this.prisma.fact_form.findUnique({
+      where: { fact_form_id },
+    });
+
+    if (!factForm) throw new Error(`Fact form id: ${fact_form_id} not found!`);
+
+    const oldJson = this.readJsonFile(nontri_account, factForm.file_leave);
+
+    let storedAttachment = oldJson.attachment;
+
+    if (data.attachment?.data) {
+      storedAttachment = this.saveAttachmentAndReplaceOld(
+        nontri_account,
+        factForm.file_leave,
+        data.attachment,
+      );
+    }
+
+    const newJson = {
+      ...oldJson,
+      ...data,
+      attachment: storedAttachment,
+    };
+
+    this.updateJsonFile(nontri_account, factForm.file_leave, newJson);
+
+    if (data.status === Status.Approve) {
+      await this.factLeaveCreditService.updateEditLeave(
+        nontri_account,
+        factForm.leave_type_id,
+        oldJson.total_day,
+        newJson.total_day,
+      );
+    }
+
+    const startDate = new Date(data.start_date);
+    startDate.setUTCHours(0, 0, 0, 0);
+
+    const endDate = new Date(data.end_date);
+    endDate.setUTCHours(0, 0, 0, 0);
+
+    const updateLeaveForm = await this.prisma.fact_form.update({
+      where: { fact_form_id },
+      data: {
+        nontri_account: data.nontri_account,
+        leave_type_id: factForm.leave_type_id,
+        start_date: startDate,
+        end_date: endDate,
+        total_day: data.total_day,
+        fiscal_year: data.fiscal_year,
+        status: data.status || Status.Pending,
+        approve_date: new Date(),
+        note: data.note,
+        update_at: new Date(),
+        file_leave: factForm.file_leave,
+      },
+    });
+
+    const file = this.readJsonFile(nontri_account, factForm.file_leave);
+    const attachmentBase64 = this.readAttachmentAsBase64(file.attachment);
+
+    return {
+      updateLeaveForm,
+      file: {
+        ...file,
+        attachment: attachmentBase64
+          ? { ...file.attachment, data: attachmentBase64 }
+          : file.attachment,
+      },
     };
   }
 
@@ -519,10 +630,17 @@ export class FactFormService {
     const form = this.readJsonFile(factForm?.nontri_account, factForm.file_leave);
     const user = UserMock.list.filter((u) => u.nontri_account === factForm.nontri_account);
 
+    const attachmentBase64 = this.readAttachmentAsBase64(form.attachment);
+
     return {
-      ...factForm,
-      form,
       user,
+      form: {
+        ...factForm,
+        ...form,
+        attachment: attachmentBase64
+          ? { ...form.attachment, data: attachmentBase64 }
+          : form.attachment,
+      },
     };
   }
 
@@ -638,13 +756,14 @@ export class FactFormService {
 
       status: db?.status ?? json.status,
       approve_date: db?.approve_date ?? null,
+      leave_aboard: json.leave_aboard ?? '-',
 
       approver1: json.approvers?.[0],
       approver2: json.approvers?.[1],
       approver3: json.approvers?.[2],
       approver4: json.approvers?.[3],
 
-      remark: json.reason ?? '-',
+      remark: json.note ?? '-',
 
       create_at: db?.create_at ?? null,
       update_at: db?.update_at ?? null,
@@ -695,5 +814,133 @@ export class FactFormService {
     });
 
     return new Map(records.map((r) => [r.file_leave, r]));
+  }
+
+  private getAttachmentDir(nontri_account: string, file_leave: string): string {
+    // 1) ตัด .json ออกเพื่อเอาเป็นชื่อชุดไฟล์แนบ
+    const baseName = file_leave.replace(/\.json$/i, '');
+
+    // 2) เก็บ attachment แยกโฟลเดอร์ตาม form (กันชนกัน)
+    return path.join(
+      process.cwd(),
+      'uploads/leave_json',
+      String(nontri_account),
+      `attachment_${baseName}`,
+    );
+  }
+
+  private ensureDir(dirPath: string): void {
+    // ถ้าไม่มีโฟลเดอร์ให้สร้าง
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+  }
+
+  private removeDirIfExists(dirPath: string): void {
+    // ถ้ามีโฟลเดอร์เก่าให้ลบทิ้งทั้งก้อน (รูปเก่าจะหายหมด)
+    if (fs.existsSync(dirPath)) {
+      fs.rmSync(dirPath, { recursive: true, force: true });
+    }
+  }
+
+  private extractBase64Data(dataUrl: string): Buffer {
+    // data:image/jpeg;base64,xxxx -> เอาเฉพาะ xxxx
+    const base64Part = dataUrl.split(';base64,').pop();
+    if (!base64Part) {
+      throw new Error('Invalid base64 data');
+    }
+    return Buffer.from(base64Part, 'base64');
+  }
+
+  private saveAttachmentAndReplaceOld(
+    nontri_account: string,
+    file_leave: string,
+    attachment: AttachmentPayload,
+  ): AttachmentStored {
+    // 1) หาโฟลเดอร์ของ attachment ตาม form
+    const dirPath = this.getAttachmentDir(nontri_account, file_leave);
+
+    // 2) ลบรูปเก่าทิ้งทั้งหมดก่อน (ตาม requirement เธอ)
+    this.removeDirIfExists(dirPath);
+
+    // 3) สร้างโฟลเดอร์ใหม่
+    this.ensureDir(dirPath);
+
+    // 4) แปลง base64 เป็น binary buffer
+    const buffer = this.extractBase64Data(attachment.data);
+
+    // 5) path ของไฟล์ใหม่
+    const fullPath = path.join(dirPath, attachment.fileName);
+
+    // 6) เขียนไฟล์ลงดิสก์
+    fs.writeFileSync(fullPath, buffer);
+
+    // 7) คืนค่า meta เพื่อเก็บลง JSON (ไม่เก็บ base64)
+    const relativePath = path.join(
+      'uploads/leave_json',
+      String(nontri_account),
+      path.basename(dirPath),
+      attachment.fileName,
+    );
+
+    return {
+      fileName: attachment.fileName,
+      fileType: attachment.fileType,
+      storedFileName: attachment.fileName,
+      relativePath,
+    };
+  }
+
+  private readAttachmentAsBase64(
+    stored?: AttachmentStored | { data?: string; fileType?: string },
+  ): string | null {
+    if (!stored) return null;
+
+    if ('data' in stored && typeof stored.data === 'string') {
+      return stored.data;
+    }
+
+    if (!('relativePath' in stored) || !stored.relativePath) {
+      return null;
+    }
+
+    const absPath = path.join(process.cwd(), stored.relativePath);
+
+    if (!fs.existsSync(absPath)) return null;
+
+    const fileBuffer = fs.readFileSync(absPath);
+    const base64 = fileBuffer.toString('base64');
+
+    return `data:${stored.fileType};base64,${base64}`;
+  }
+
+  async cancelLeaveForm(fact_form_id: number) {
+    const factForm = await this.prisma.fact_form.findUnique({
+      where: { fact_form_id },
+    });
+
+    if (!factForm) throw new Error(`Fact form id: ${fact_form_id} not found!`);
+
+    await this.prisma.fact_form.update({
+      where: { fact_form_id },
+      data: { status: Status.Cancel },
+    });
+
+    const oldJson = this.readJsonFile(factForm.nontri_account, factForm.file_leave);
+
+    const newJson = {
+      ...oldJson,
+      status: Status.Cancel,
+    };
+
+    this.updateJsonFile(factForm.nontri_account, factForm.file_leave, newJson);
+
+    if ((factForm.status as string) === Status.Approve) {
+      await this.factLeaveCreditService.updateCancelLeave(
+        factForm.nontri_account,
+        factForm.leave_type_id,
+        factForm.total_day,
+      );
+    }
   }
 }

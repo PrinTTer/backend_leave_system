@@ -371,4 +371,42 @@ export class FactLeaveCreditService {
 
     return { fact_credit, officialduty };
   }
+
+  async updateCancelLeave(nontri_account: string, leave_type_id: number, cancelDay: number) {
+    const record = await this.prisma.fact_leave_credit.findUnique({
+      where: { nontri_account_leave_type_id: { nontri_account, leave_type_id } },
+    });
+
+    if (!record) throw new Error('can not find fact_leave_credit');
+
+    const new_used_leave = record.used_leave - cancelDay;
+    const new_left_leave = record.left_leave + cancelDay;
+    return this.prisma.fact_leave_credit.update({
+      where: { nontri_account_leave_type_id: { nontri_account, leave_type_id } },
+      data: {
+        used_leave: new_used_leave,
+        left_leave: new_left_leave,
+      },
+    });
+  }
+
+  async findLeaveByUserIdWithOfficialduty(nontri_account: string) {
+    const fact_credit = await this.prisma.fact_leave_credit.findMany({
+      where: {
+        nontri_account,
+      },
+      include: {
+        leave_type: true,
+      },
+    });
+
+    const officialduty = await this.prisma.leave_type.findFirst({
+      where: { category: 'officialduty' },
+    });
+
+    const fact_credit_list = fact_credit.map((fc) => fc.leave_type);
+    const payload = [...fact_credit_list, officialduty];
+
+    return payload;
+  }
 }
