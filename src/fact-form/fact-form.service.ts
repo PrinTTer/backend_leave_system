@@ -16,6 +16,7 @@ import {
   CreateOfficialDutyFactFormDto,
 } from './dto/create-officialduty-fact-form.dto';
 import { LeaveCategory } from 'src/leave-type/dto/create-leave-type.dto';
+import { SearchFactformDto } from './dto/search-fact-form.dto';
 
 export interface FactLeaveCreditResult {
   leave_credit_id?: number;
@@ -41,6 +42,8 @@ export interface LeaveType {
 }
 
 export interface FactFormJson {
+  fact_form_id?: number;
+  file_leave: string;
   nontri_account: number;
   leave_type_id?: number;
 
@@ -67,10 +70,25 @@ export interface FactFormJson {
 
   attachment?: string;
 
-  leave_type?: LeaveType;
-  approvers?: Approval;
-
-  [key: string]: any;
+  leave_type: LeaveType;
+  approvers: Array<
+    [
+      {
+        nontri_account: string;
+        other_prefix: string;
+        prefix: string;
+        fullname: string;
+        gender: string;
+        position: string;
+        faculty: string;
+        department: string;
+        employment_start_date: string;
+      },
+      {
+        status: string;
+      },
+    ]
+  >;
 }
 
 export interface Approval {
@@ -86,8 +104,7 @@ export interface Approval {
 }
 
 export interface ApprovalConfig {
-  id: number;
-  nontri_account: number;
+  nontri_account: string;
   user: Approval;
   approver_order1: Approval[];
   approver_order2: Approval[];
@@ -135,6 +152,8 @@ export class FactFormService {
     // 2) หา config ของ user
     const config = ApprovalMock.list.find((a) => a.nontri_account === nontri_account);
 
+    console.log('all approver', config);
+
     if (!config) {
       throw new Error(`No approver config found for nontri_account=${nontri_account}`);
     }
@@ -172,13 +191,13 @@ export class FactFormService {
       throw new Error(`No approvers found for nontri_account=${dto.nontri_account}`);
     }
 
+    console.log('approval', approval);
+
     const leaveForm = {
-      ...dto,
-      leaveType,
+      leave_type: leaveType,
       approvers: approval.map((a) => [
         {
-          id: a.nontri_account,
-          name: a.fullname,
+          ...a,
         },
         {
           status: dto.status || Status.Pending,
@@ -215,6 +234,13 @@ export class FactFormService {
         update_at: new Date(),
       },
     });
+
+    const newData = {
+      ...form,
+      ...leaveForm,
+    };
+
+    this.updateJsonFile(dto.nontri_account, jsonPath, newData);
 
     if (dto.status === Status.Pending) {
       for (const a of approval) {
@@ -288,14 +314,11 @@ export class FactFormService {
       throw new Error(`No approvers found for nontri_account=${dto.nontri_account}`);
     }
 
-    console.log('approval', approval);
-
     const leaveForm = {
-      ...dto,
       leaveType,
       approvers: approval.map((a) => [
         {
-          id: a.nontri_account,
+          nontri_account: a.nontri_account,
           name: a.fullname,
         },
         {
@@ -346,6 +369,13 @@ export class FactFormService {
         update_at: new Date(),
       },
     });
+
+    const newData = {
+      ...form,
+      ...leaveForm,
+    };
+
+    this.updateJsonFile(dto.nontri_account, jsonPath, newData);
 
     if (dto.status === Status.Pending) {
       for (const a of approval) {
@@ -535,12 +565,135 @@ export class FactFormService {
     return forms.map((f) => ({
       fact_form_id: f.fact_form_id,
       nontri_account: f.nontri_account,
-      title: f.leave_type.name, // ชื่อประเภทการลา
+      title: f.leave_type.name,
       start: f.start_date,
       end: f.end_date,
       status: f.status,
       leave_type_id: f.leave_type_id,
       total_day: f.total_day,
     }));
+  }
+
+  async searchFactformFromJson(nontri_account: string, dto: SearchFactformDto) {
+    const files = this.readAllJsonFiles(nontri_account);
+    const factFormMap = await this.getFactFormMap(nontri_account);
+
+    const fiscal_year = dto.fiscal_year ? Number(dto.fiscal_year) : undefined;
+
+    const leave_type_id = dto.leave_type_id ? Number(dto.leave_type_id) : undefined;
+
+    const filtered = files.filter((item) => {
+      if (fiscal_year && item.fiscal_year !== fiscal_year) {
+        return false;
+      }
+
+      if (leave_type_id && item.leave_type_id !== leave_type_id) {
+        return false;
+      }
+
+      if (dto.search && !this.matchSearch(item, dto.search)) {
+        return false;
+      }
+
+      return true;
+    });
+
+    return filtered.map((item) => {
+      const dbRecord = factFormMap.get(item.file_leave);
+
+      return this.mapToTableRow(item, dbRecord);
+    });
+  }
+
+  private readAllJsonFiles(nontri_account: string): FactFormJson[] {
+    const dirPath = path.join(process.cwd(), 'uploads/leave_json', String(nontri_account));
+
+    if (!fs.existsSync(dirPath)) {
+      return [];
+    }
+
+    const files = fs.readdirSync(dirPath);
+
+    return files
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => this.readJsonFile(nontri_account, file));
+  }
+
+  private mapToTableRow(
+    json: FactFormJson,
+    db?: {
+      fact_form_id: number;
+      status: string;
+      approve_date: Date | null;
+      update_at: Date;
+      create_at: Date;
+    },
+  ) {
+    return {
+      fact_form_id: db?.fact_form_id ?? null,
+      leave_type: json.leave_type,
+      start_date: json.start_date,
+      end_date: json.end_date,
+      total_day: json.total_day,
+
+      status: db?.status ?? json.status,
+      approve_date: db?.approve_date ?? null,
+
+      approver1: json.approvers?.[0],
+      approver2: json.approvers?.[1],
+      approver3: json.approvers?.[2],
+      approver4: json.approvers?.[3],
+
+      remark: json.reason ?? '-',
+
+      create_at: db?.create_at ?? null,
+      update_at: db?.update_at ?? null,
+    };
+  }
+
+  private matchSearch(item: FactFormJson, keyword: string): boolean {
+    const search = keyword.toLowerCase();
+
+    const STATUS_TH_MAP: Record<string, string> = {
+      pending: 'รอดำเนินการ',
+      approved: 'อนุมัติ',
+      rejected: 'ไม่อนุมัติ',
+      cancel: 'ยกเลิก',
+    };
+    const statusTh = item.status ? (STATUS_TH_MAP[item.status] ?? '') : '';
+
+    const searchableFields: Array<string | number | undefined> = [
+      item.leave_type?.name,
+      item.status,
+      statusTh,
+      item.reason,
+      item.total_day,
+      item.start_date,
+      item.end_date,
+      item.file_leave,
+      ...item.approvers.flatMap((a) => a[0]?.fullname),
+    ];
+
+    return searchableFields.some((field) =>
+      String(field ?? '')
+        .toLowerCase()
+        .includes(search),
+    );
+  }
+
+  private async getFactFormMap(nontri_account: string) {
+    const records = await this.prisma.fact_form.findMany({
+      where: { nontri_account },
+      select: {
+        fact_form_id: true,
+        file_leave: true,
+        status: true,
+        approve_date: true,
+        update_at: true,
+        create_at: true,
+      },
+    });
+
+    return new Map(records.map((r) => [r.file_leave, r]));
   }
 }
